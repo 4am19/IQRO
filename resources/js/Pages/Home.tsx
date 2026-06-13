@@ -309,30 +309,62 @@ function FeatureCard({ emoji, label, sub, gradient, glow, delay }: {
 /*  MAIN HOME PAGE                                                            */
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-/* ── Sound Toggle Button ─────────────────────────────────────────────────── */
-function SoundToggleButton() {
-    const { isMuted, isPlaying, toggle } = useBGM();
+/* ── Sound Control Component ─────────────────────────────────────────────── */
+function SoundControl() {
+    const { isMuted, isPlaying, volume, toggle, setVolume } = useBGM();
+    const [showSlider, setShowSlider] = useState(false);
+
     return (
-        <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className={`relative p-3 rounded-full transition-all border ${
-                isMuted 
-                    ? 'bg-white/10 hover:bg-white/20 border-white/10' 
-                    : 'bg-indigo-500/40 hover:bg-indigo-500/60 border-indigo-400/50'
-            }`}
-            onClick={(e) => { e.stopPropagation(); toggle(); }}
+        <div 
+            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full transition-all border border-white/10 relative"
+            onMouseEnter={() => setShowSlider(true)}
+            onMouseLeave={() => setShowSlider(false)}
+            onTouchStart={() => setShowSlider(!showSlider)}
         >
-            {/* Pulsing ring when playing */}
-            {isPlaying && (
-                <motion.span 
-                    className="absolute inset-0 rounded-full border-2 border-indigo-400/60"
-                    animate={{ scale: [1, 1.4, 1.4], opacity: [0.7, 0, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                />
-            )}
-            <span className="text-xl">{isMuted ? '🔇' : '🔊'}</span>
-        </motion.button>
+            <motion.button
+                whileTap={{ scale: 0.9 }}
+                className={`relative p-3 rounded-full transition-all ${
+                    isMuted ? 'text-white/50' : 'text-white'
+                }`}
+                onClick={(e) => { e.stopPropagation(); toggle(); }}
+            >
+                {/* Pulsing ring when playing */}
+                {isPlaying && (
+                    <motion.span 
+                        className="absolute inset-0 rounded-full border-2 border-indigo-400/60 pointer-events-none"
+                        animate={{ scale: [1, 1.4, 1.4], opacity: [0.7, 0, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                    />
+                )}
+                <span className="text-xl">{isMuted ? '🔇' : '🔊'}</span>
+            </motion.button>
+
+            <AnimatePresence>
+                {showSlider && (
+                    <motion.div
+                        initial={{ width: 0, opacity: 0 }}
+                        animate={{ width: 100, opacity: 1 }}
+                        exit={{ width: 0, opacity: 0 }}
+                        className="overflow-hidden pr-4 flex items-center"
+                    >
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={volume}
+                            onChange={(e) => {
+                                if (isMuted && parseFloat(e.target.value) > 0) toggle();
+                                setVolume(parseFloat(e.target.value));
+                            }}
+                            className="w-24 h-1.5 bg-white/30 rounded-lg appearance-none cursor-pointer outline-none accent-indigo-400"
+                            onClick={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
     );
 }
 
@@ -593,7 +625,7 @@ export default function Home({ auth }: Props) {
                     >
                         <span className="text-xl">👥</span>
                     </Link>
-                    <SoundToggleButton />
+                    <SoundControl />
                     {isStarted && (
                         <motion.button
                             whileHover={{ scale: 1.1 }}
