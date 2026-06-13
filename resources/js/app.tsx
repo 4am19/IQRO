@@ -25,6 +25,8 @@ createInertiaApp({
         );
     },
     progress: {
-        color: '#4B5563',
+        color: '#8b5cf6', // violet-500
+        showSpinner: true,
+        delay: 50,
     },
 });

@@ -167,9 +167,9 @@ export default function ParentDashboard({ students, selectedStudent, stats, auth
     const pctComplete = stats && stats.total_levels > 0 ? Math.round((stats.levels_completed / stats.total_levels) * 100) : 0;
 
     return (
-        <AppLayout title="Dashboard Orang Tua" customBg="dash-page" fullWidth>
-            <div className="dash-page pb-12 pt-0 md:pt-6">
-                <div className="max-w-[1200px] mx-auto md:px-6">
+        <AppLayout title="Dashboard Orang Tua" customBg="dash-page" fullWidth staticHeader noPadding>
+            <div className="dash-page pb-12 pt-2 md:pt-4">
+                <div className="max-w-[1200px] mx-auto px-4 md:px-6">
                     
                     {/* ═══════════ HERO — Night Sky ═══════════ */}
                     <div className="dash-hero md:rounded-3xl shadow-2xl mb-6">

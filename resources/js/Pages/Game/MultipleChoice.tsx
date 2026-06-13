@@ -15,7 +15,7 @@ interface Props { letters: LetterWithHarakat[]; level: Level; student?: Student 
 const TOTAL = 10;
 
 // Confetti particle component
-function ConfettiParticles() {
+const ConfettiParticles = React.memo(function ConfettiParticles() {
     const colors = ['#fbbf24', '#34d399', '#60a5fa', '#f472b6', '#a78bfa', '#fb923c'];
     return (
         <div className="fixed inset-0 pointer-events-none z-50">
@@ -28,9 +28,9 @@ function ConfettiParticles() {
             ))}
         </div>
     );
-}
+});
 
-function StarRow({ score }: { score: number }) {
+const StarRow = React.memo(function StarRow({ score }: { score: number }) {
     const n = score >= 80 ? 3 : score >= 50 ? 2 : score > 0 ? 1 : 0;
     return (
         <div className="flex gap-1 justify-center">
@@ -43,10 +43,10 @@ function StarRow({ score }: { score: number }) {
             ))}
         </div>
     );
-}
+});
 
 export default function MultipleChoice({ letters, level, student, nextLevel }: Props) {
-    const { playAudio } = useAudioPlayer();
+    const { playAudio, preloadAudio } = useAudioPlayer();
     const [hearts, setHearts] = useState(3);
     const [showConfetti, setShowConfetti] = useState(false);
     const {
@@ -73,6 +73,16 @@ export default function MultipleChoice({ letters, level, student, nextLevel }: P
         if (feedback === 'wrong') setHearts(h => Math.max(0, h - 1));
         if (feedback === 'correct') { setShowConfetti(true); setTimeout(() => setShowConfetti(false), 2000); }
     }, [feedback]);
+
+    // Preload audio for current question to eliminate delay
+    useEffect(() => {
+        if (currentQuestion) {
+            preloadAudio(currentQuestion.target.displayChar);
+            currentQuestion.options.forEach(opt => {
+                preloadAudio(opt.displayChar);
+            });
+        }
+    }, [currentQuestion, preloadAudio]);
 
     const levelName = level.title.replace(/Level \d+: /, '');
     const passed = score >= level.minimum_passing_score;
@@ -160,6 +170,8 @@ export default function MultipleChoice({ letters, level, student, nextLevel }: P
 
     return (
         <FullscreenWrapper>
+        {/* Preload background image */}
+        <link rel="preload" as="image" href="/images/background%20level.png" />
         <div className="h-screen-safe overflow-hidden bg-cover bg-center bg-no-repeat flex flex-col font-sans relative"
             style={{ backgroundImage: "url('/images/background%20level.png')" }}>
 

@@ -7,12 +7,16 @@ const navLinks = [
     { href: '/game/select', label: 'Bermain', icon: '🎮', colorClass: 'btn-candy' },
 ];
 
-export default function AppHeader() {
+interface AppHeaderProps {
+    isStatic?: boolean;
+}
+
+export default function AppHeader({ isStatic = false }: AppHeaderProps) {
     const { url } = usePage<any>();
     const isActive = (href: string) => href === '/' ? url === '/' : url.startsWith(href);
 
     return (
-        <header className="sticky top-4 z-40 px-4 md:px-8 transition-all">
+        <header className={`${isStatic ? 'relative pt-2 md:pt-4' : 'sticky top-4'} z-40 px-4 md:px-8 transition-all`}>
             <div className="max-w-[1200px] mx-auto flex items-center justify-between gap-4">
 
                 {/* ── Logo (outside navbar pill) ── */}
@@ -20,7 +24,7 @@ export default function AppHeader() {
                     <img
                         src="/images/logo_pintar_mengaji.png"
                         alt="Pintar Mengaji"
-                        className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 lg:w-52 lg:h-52 object-contain drop-shadow-xl"
+                        className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 object-contain drop-shadow-xl transition-all"
                     />
                 </Link>
 

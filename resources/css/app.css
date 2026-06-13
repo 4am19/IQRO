@@ -627,13 +627,13 @@
     background: linear-gradient(175deg, #312E81 0%, #1E1B4B 40%, #0F0A3C 100%);
     border-radius: 0 0 32px 32px;
     position: relative;
-    overflow: hidden;
     padding: 20px 20px 28px;
   }
   .dash-hero::before {
     content: '';
     position: absolute;
     inset: 0;
+    border-radius: inherit;
     background:
       radial-gradient(1.5px 1.5px at 10% 15%, rgba(255,255,255,0.7) 50%, transparent 51%),
       radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.5) 50%, transparent 51%),

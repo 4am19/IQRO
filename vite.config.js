@@ -14,4 +14,15 @@ export default defineConfig({
         }),
         react(),
     ],
+    build: {
+        target: 'esnext',
+        minify: 'esbuild',
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: ['react', 'react-dom', 'framer-motion', 'lucide-react', 'axios'],
+                },
+            },
+        },
+    },
 });

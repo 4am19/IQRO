@@ -14,9 +14,10 @@ interface Props {
     fantasyBg?: boolean;
     fullWidth?: boolean;
     customBg?: string;
+    staticHeader?: boolean;
 }
 
-export default function AppLayout({ title, description, children, noPadding = false, noHeader = false, noNav = false, fantasyBg = false, fullWidth = false, customBg }: Props) {
+export default function AppLayout({ title, description, children, noPadding = false, noHeader = false, noNav = false, fantasyBg = false, fullWidth = false, customBg, staticHeader = false }: Props) {
     const [showResumePrompt, setShowResumePrompt] = useState(false);
 
     useEffect(() => {
@@ -111,7 +112,7 @@ export default function AppLayout({ title, description, children, noPadding = fa
             )}
 
             <div className={`flex flex-col min-h-screen ${customBg && !customBg.startsWith('/') && !customBg.startsWith('http') ? customBg : ''} ${!customBg ? (fantasyBg ? 'learn-fantasy-bg' : 'bg-[#EEF2F6]') : ''}`} style={customBg && (customBg.startsWith('/') || customBg.startsWith('http')) ? { backgroundImage: `url('${customBg}')`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' } : {}}>
-                {!noHeader && <AppHeader />}
+                {!noHeader && <AppHeader isStatic={staticHeader} />}
 
                 <main className={`flex-1 w-full ${fullWidth ? 'max-w-full' : fantasyBg ? 'max-w-[1400px]' : 'max-w-2xl'} mx-auto ${noPadding ? '' : 'px-4 lg:px-8 py-8'} ${!noNav ? 'pb-24 md:pb-8' : ''}`}>
                     {children}
