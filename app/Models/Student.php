@@ -12,6 +12,7 @@ class Student extends Model
         'user_id',
         'name',
         'age',
+        'gender',
         'avatar_url',
         'total_score',
     ];

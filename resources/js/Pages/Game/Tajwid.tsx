@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { router } from '@inertiajs/react';
-import { X, Heart, Trophy, RotateCcw, ArrowLeft, Volume2, Sparkles } from 'lucide-react';
+import { X, Heart, Trophy, RotateCcw, ArrowLeft, Volume2, Sparkles, SkipForward } from 'lucide-react';
 import axios from 'axios';
 
 interface Level { id: number; title: string; minimum_passing_score: number; }
 interface Student { id: number; name: string; }
-interface Props { level: Level; student?: Student | null; }
+interface Props { level: Level; student?: Student | null; nextLevel?: Level | null; }
 
 const TAJWID_QUESTIONS = [
     {
@@ -102,7 +102,7 @@ function ConfettiParticles() {
     );
 }
 
-export default function Tajwid({ level, student }: Props) {
+export default function Tajwid({ level, student, nextLevel }: Props) {
     const TOTAL = TAJWID_QUESTIONS.length;
     const [hearts, setHearts] = useState(3);
     const [score, setScore] = useState(0);
@@ -202,17 +202,25 @@ export default function Tajwid({ level, student }: Props) {
                             <p className="text-lg font-black text-rose-600">{TOTAL - correctAnswers}</p>
                         </div>
                     </div>
-                    <div className="w-full flex flex-col gap-2 mt-1">
-                        {passed && (
-                            <button onClick={() => router.visit(`/game/select?student_id=${student?.id ?? ''}`)}
-                                className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-black py-2.5 rounded-full shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
-                                <Trophy className="w-4 h-4" /> Selesai
+                    <div className="w-full flex gap-3 mt-2">
+                            <button onClick={() => router.visit(`/game/select${student ? `?student_id=${student.id}` : ''}`)}
+                                className="flex-1 bg-white border-2 border-slate-200 text-slate-600 font-black py-2.5 rounded-full flex items-center justify-center gap-2 active:scale-95 transition-transform text-xs sm:text-sm shadow-sm hover:bg-slate-50">
+                                <ArrowLeft size={16} /> Kembali
                             </button>
-                        )}
-                        <button onClick={restart}
-                            className="w-full bg-white border-2 border-slate-200 text-slate-600 font-black py-2 rounded-full flex items-center justify-center gap-2 active:scale-95 transition-transform">
-                            <RotateCcw className="w-4 h-4" /> Ulangi
-                        </button>
+                            <button onClick={restart}
+                                className={`flex-1 font-black py-2.5 rounded-full flex items-center justify-center gap-2 active:scale-95 transition-transform text-xs sm:text-sm shadow-sm border-2 ${
+                                    (nextLevel && passed)
+                                    ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                    : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-transparent shadow-lg'
+                                }`}>
+                                <RotateCcw size={16} /> {(nextLevel && passed) ? 'Ulangi' : 'Main Lagi'}
+                            </button>
+                            {nextLevel && passed && (
+                                <button onClick={() => router.visit(`/game/play/${nextLevel.id}${student ? `?student_id=${student.id}` : ''}`)}
+                                    className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-black py-2.5 rounded-full flex items-center justify-center gap-2 active:scale-95 transition-transform text-xs sm:text-sm shadow-lg border-2 border-transparent">
+                                    Lanjut <SkipForward size={16} />
+                                </button>
+                            )}
                     </div>
                 </motion.div>
             </div>

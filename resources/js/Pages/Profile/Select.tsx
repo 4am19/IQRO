@@ -7,6 +7,7 @@ import MascotHufi from '@/Components/MascotHufi';
 interface Student {
     id: number;
     name: string;
+    avatar_url?: string;
 }
 
 interface Props {
@@ -49,18 +50,21 @@ export default function ProfileSelect({ students }: Props) {
                 <div className="z-10 flex flex-wrap justify-center gap-6 md:gap-10 max-w-4xl">
                     {/* Student Profiles */}
                     {students.map((student, index) => {
-                        // Generate a random but consistent color based on ID
-                        const colors = [
-                            'from-emerald-400 to-teal-600',
-                            'from-pink-400 to-rose-600',
-                            'from-amber-400 to-orange-500',
-                            'from-blue-400 to-indigo-600',
-                            'from-purple-400 to-fuchsia-600'
-                        ];
-                        const emojis = ['👦', '👧', '👨‍🚀', '👸', '🦸‍♂️', '🧚‍♀️'];
-                        
-                        const colorClass = colors[student.id % colors.length];
-                        const emoji = emojis[student.id % emojis.length];
+                        let colorClass = 'from-blue-400 to-indigo-600';
+                        let emoji = '👦';
+
+                        if (student.avatar_url === 'girl') {
+                            colorClass = 'from-pink-400 to-rose-600';
+                            emoji = '👧';
+                        } else if (student.avatar_url === 'boy') {
+                            colorClass = 'from-blue-400 to-indigo-600';
+                            emoji = '👦';
+                        } else {
+                            // Fallback based on ID if no avatar_url is set
+                            const fallbackColors = ['from-emerald-400 to-teal-600', 'from-amber-400 to-orange-500', 'from-purple-400 to-fuchsia-600'];
+                            colorClass = fallbackColors[student.id % fallbackColors.length];
+                            emoji = '👤';
+                        }
 
                         return (
                             <motion.button

@@ -6,13 +6,13 @@ import {
     DndContext, DragEndEvent, useDroppable, useDraggable,
     TouchSensor, MouseSensor, useSensor, useSensors, DragOverlay,
 } from '@dnd-kit/core';
-import { Trophy, RotateCcw, ArrowLeft, CheckCircle2, Volume2, X, Sparkles } from 'lucide-react';
+import { Trophy, RotateCcw, ArrowLeft, CheckCircle2, Volume2, X, Sparkles, SkipForward } from 'lucide-react';
 import axios from 'axios';
 
 interface Letter { id: number; char_arabic: string; name: string; read_latin: string; }
 interface Level { id: number; title: string; minimum_passing_score: number; }
 interface Student { id: number; name: string; }
-interface DragDropProps { letters: Letter[]; level: Level; student?: Student | null; }
+interface DragDropProps { letters: Letter[]; level: Level; student?: Student | null; nextLevel?: Level | null; }
 
 const WORD_LIST = [
     { word: 'بَيْت', meaning: 'Rumah',  letters: ['ب', 'ي', 'ت'] },
@@ -63,7 +63,7 @@ function DroppableSlot({ id, char }: { id: string; char?: string }) {
     );
 }
 
-export default function DragDrop({ letters, level, student }: DragDropProps) {
+export default function DragDrop({ letters, level, student, nextLevel }: DragDropProps) {
     const { playAudio } = useAudioPlayer();
     const [wordQueue] = useState(() => [...WORD_LIST].sort(() => Math.random() - 0.5));
     const [currentWordIdx, setCurrentWordIdx] = useState(0);
@@ -157,16 +157,26 @@ export default function DragDrop({ letters, level, student }: DragDropProps) {
                             transition={{ delay: i * 0.2, type: 'spring' as const }}
                             className={`text-4xl ${i <= stars ? 'text-amber-400' : 'text-slate-200'}`}>★</motion.span>
                     ))}</div>
-                    <div className="w-full flex gap-2">
-                        <button onClick={() => router.visit(`/game/select${student ? `?student_id=${student.id}` : ''}`)}
-                            className="flex-1 bg-white border-2 border-slate-200 text-slate-600 font-black py-2 rounded-full flex items-center justify-center gap-1 active:scale-95 transition-transform text-sm">
-                            <ArrowLeft size={16} /> Kembali
-                        </button>
-                        <button onClick={restart}
-                            className="flex-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-black py-2 rounded-full flex items-center justify-center gap-1 active:scale-95 transition-transform text-sm shadow-lg">
-                            <RotateCcw size={16} /> Main Lagi
-                        </button>
-                    </div>
+                        <div className="w-full flex gap-3 mt-2">
+                            <button onClick={() => router.visit(`/game/select${student ? `?student_id=${student.id}` : ''}`)}
+                                className="flex-1 bg-white border-2 border-slate-200 text-slate-600 font-black py-2.5 rounded-full flex items-center justify-center gap-2 active:scale-95 transition-transform text-xs sm:text-sm shadow-sm hover:bg-slate-50">
+                                <ArrowLeft size={16} /> Kembali
+                            </button>
+                            <button onClick={restart}
+                                className={`flex-1 font-black py-2.5 rounded-full flex items-center justify-center gap-2 active:scale-95 transition-transform text-xs sm:text-sm shadow-sm border-2 ${
+                                    (nextLevel && score >= level.minimum_passing_score)
+                                    ? 'bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100'
+                                    : 'bg-gradient-to-r from-orange-400 to-amber-500 text-white border-transparent shadow-lg'
+                                }`}>
+                                <RotateCcw size={16} /> {(nextLevel && score >= level.minimum_passing_score) ? 'Ulangi' : 'Main Lagi'}
+                            </button>
+                            {nextLevel && score >= level.minimum_passing_score && (
+                                <button onClick={() => router.visit(`/game/play/${nextLevel.id}${student ? `?student_id=${student.id}` : ''}`)}
+                                    className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-black py-2.5 rounded-full flex items-center justify-center gap-2 active:scale-95 transition-transform text-xs sm:text-sm shadow-lg border-2 border-transparent">
+                                    Lanjut <SkipForward size={16} />
+                                </button>
+                            )}
+                        </div>
                 </motion.div>
             </div>
         );

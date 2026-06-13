@@ -17,13 +17,11 @@ export default function AppHeader() {
 
                 {/* ── Logo (outside navbar pill) ── */}
                 <Link href="/" className="shrink-0 hover:scale-105 active:scale-95 transition-transform duration-300">
-                    <div className="bg-white border-[3px] border-white/90 shadow-[0_10px_25px_rgba(0,0,0,0.15)] rounded-[1.5rem] md:rounded-[2rem] p-1.5 md:p-2 flex items-center justify-center">
-                        <img
-                            src="/images/logo_pintar_mengaji.png"
-                            alt="Pintar Mengaji"
-                            className="w-16 h-16 md:w-[76px] md:h-[76px] object-contain drop-shadow-sm"
-                        />
-                    </div>
+                    <img
+                        src="/images/logo_pintar_mengaji.png"
+                        alt="Pintar Mengaji"
+                        className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 lg:w-52 lg:h-52 object-contain drop-shadow-xl"
+                    />
                 </Link>
 
                 {/* ── Navbar Pill (icons only) ── */}

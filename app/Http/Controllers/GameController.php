@@ -91,8 +91,13 @@ class GameController extends Controller
 
         $page = $pageMap[$level->game_type] ?? 'Game/MultipleChoice';
 
+        $nextLevel = Level::where('order_sequence', '>', $level->order_sequence)
+            ->orderBy('order_sequence')
+            ->first();
+
         return Inertia::render($page, [
             'level' => $level,
+            'nextLevel' => $nextLevel,
             'letters' => $letters,
             'student' => $student,
         ]);

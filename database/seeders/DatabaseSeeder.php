@@ -27,14 +27,18 @@ class DatabaseSeeder extends Seeder
         Student::create([
             'user_id' => $user->id,
             'name' => 'Ahmad',
-            'avatar_url' => null,
+            'age' => 7,
+            'gender' => 'L',
+            'avatar_url' => 'boy',
             'total_score' => 0,
         ]);
 
         Student::create([
             'user_id' => $user->id,
             'name' => 'Aisyah',
-            'avatar_url' => null,
+            'age' => 5,
+            'gender' => 'P',
+            'avatar_url' => 'girl',
             'total_score' => 0,
         ]);
 

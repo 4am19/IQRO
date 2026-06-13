@@ -1,30 +1,63 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { router } from '@inertiajs/react';
 import { useAudioPlayer } from '@/Hooks/useAudioPlayer';
-import { Trophy, RotateCcw, ArrowLeft, Eraser, CheckCircle2, Volume2, X } from 'lucide-react';
+import { Trophy, RotateCcw, ArrowLeft, Eraser, CheckCircle2, Volume2, X, SkipForward } from 'lucide-react';
 import axios from 'axios';
 
 interface Letter { id: number; char_arabic: string; name: string; read_latin: string; }
 interface Level { id: number; title: string; minimum_passing_score: number; }
 interface Student { id: number; name: string; }
-interface TracingProps { letters: Letter[]; level: Level; student?: Student | null; }
+interface TracingProps { letters: Letter[]; level: Level; student?: Student | null; nextLevel?: Level | null; }
 
 const TOTAL_LETTERS = 5;
+const MIN_COVERAGE = 0.05;   // Very relaxed: just 5% coverage means they traced inside the line
 
-export default function Tracing({ letters, level, student }: TracingProps) {
+/* ═══════════════════════════════════════════════════════════════════════════
+   ENCOURAGEMENT MESSAGES
+   ═══════════════════════════════════════════════════════════════════════════ */
+const ERROR_MESSAGES = [
+    'Ayo tulis hurufnya dulu! ✏️',
+    'Ikuti garis putus-putusnya ya! 🌟',
+];
+const SUCCESS_MESSAGES = [
+    'Bagus sekali! 🌟',
+    'MasyaAllah, hebat! 🎉',
+    'Kamu pintar! ⭐',
+    'Sempurna! 💯',
+];
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANIMATED START POINT COMPONENT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAIN TRACING COMPONENT
+   ═══════════════════════════════════════════════════════════════════════════ */
+export default function Tracing({ letters, level, student, nextLevel }: TracingProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const guideCanvasRef = useRef<HTMLCanvasElement>(null); // Hidden canvas for guide pixel detection
     const isDrawingRef = useRef(false);
     const { playAudio } = useAudioPlayer();
 
     const [queue, setQueue] = useState<Letter[]>([]);
     const [currentIdx, setCurrentIdx] = useState(0);
-    const [coveredPoints, setCoveredPoints] = useState<Set<string>>(new Set());
     const [score, setScore] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [showGuidePoints, setShowGuidePoints] = useState(true);
     const startTime = useRef(Date.now());
 
+    // Validation state
+    const [corePixels, setCorePixels] = useState<Set<string>>(new Set());
+    const [validPixels, setValidPixels] = useState<Set<string>>(new Set());
+    const [letterBounds, setLetterBounds] = useState<{minX: number, maxX: number, minY: number, maxY: number} | null>(null);
+    const [feedbackMsg, setFeedbackMsg] = useState('');
+    const [feedbackType, setFeedbackType] = useState<'error' | 'success' | ''>('');
+    const [shakeButton, setShakeButton] = useState(false);
+    const [hasDrawn, setHasDrawn] = useState(false);
+
+    // Initialize letter queue
     useEffect(() => {
         if (letters.length === 0) return;
         const shuffled = [...letters].sort(() => Math.random() - 0.5).slice(0, TOTAL_LETTERS);
@@ -32,50 +65,168 @@ export default function Tracing({ letters, level, student }: TracingProps) {
         setCurrentIdx(0);
         setScore(0);
         setIsFinished(false);
+        setShowGuidePoints(true);
         startTime.current = Date.now();
     }, [letters]);
 
     const currentLetter = queue[currentIdx] ?? null;
 
-    useEffect(() => {
+    // Render guide letter on both visible canvas and hidden guide canvas
+    const renderGuide = useCallback(() => {
         if (!currentLetter) return;
         const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        const guideCanvas = guideCanvasRef.current;
+        if (!canvas || !guideCanvas) return;
 
+        const ctx = canvas.getContext('2d');
+        const guideCtx = guideCanvas.getContext('2d');
+        if (!ctx || !guideCtx) return;
+
+        // Set hidden guide canvas to same size
+        guideCanvas.width = canvas.width;
+        guideCanvas.height = canvas.height;
+
+        // Clear both
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        setCoveredPoints(new Set());
+        guideCtx.clearRect(0, 0, guideCanvas.width, guideCanvas.height);
 
         const size = Math.min(canvas.width, canvas.height) * 0.7;
+
+        // Draw on guide canvas (solid, thick — for generous pixel detection area)
+        guideCtx.font = `${size}px Amiri, serif`;
+        guideCtx.textAlign = 'center';
+        guideCtx.textBaseline = 'middle';
+        guideCtx.fillStyle = '#000000';
+        guideCtx.fillText(currentLetter.char_arabic, guideCanvas.width / 2, guideCanvas.height / 2);
+
+        // 1. Get the visual bounding box of the letter using measureText
+        // This avoids the bloat from the thick line stroke and gives exact visual extremes
+        const metrics = guideCtx.measureText(currentLetter.char_arabic);
+        const minX = (guideCanvas.width / 2) - metrics.actualBoundingBoxLeft;
+        const maxX = (guideCanvas.width / 2) + metrics.actualBoundingBoxRight;
+        const minY = (guideCanvas.height / 2) - metrics.actualBoundingBoxAscent;
+        const maxY = (guideCanvas.height / 2) + metrics.actualBoundingBoxDescent;
+
+        // Save true visual bounding box for stroke mapping
+        if (minX <= maxX && minY <= maxY) {
+            setLetterBounds({ minX, maxX, minY, maxY });
+        } else {
+            setLetterBounds(null);
+        }
+
+        // 2. Extract core skeleton pixels (thin) for coverage validation
+        let imageData = guideCtx.getImageData(0, 0, guideCanvas.width, guideCanvas.height);
+        const newCorePixels = new Set<string>();
+        const gridSize = 6;
+        
+        for (let y = 0; y < guideCanvas.height; y += gridSize) {
+            for (let x = 0; x < guideCanvas.width; x += gridSize) {
+                const idx = (y * guideCanvas.width + x) * 4;
+                if (imageData.data[idx + 3] > 30) { 
+                    newCorePixels.add(`${Math.round(x / gridSize)},${Math.round(y / gridSize)}`);
+                }
+            }
+        }
+        setCorePixels(newCorePixels);
+
+        // 3. Draw fat stroke for valid tracing area boundaries
+        guideCtx.lineWidth = 40; // FAT stroke for generous detection area
+        guideCtx.strokeStyle = '#000000';
+        guideCtx.strokeText(currentLetter.char_arabic, guideCanvas.width / 2, guideCanvas.height / 2);
+
+        // 4. Extract valid pixels for accuracy validation
+        imageData = guideCtx.getImageData(0, 0, guideCanvas.width, guideCanvas.height);
+        const newValidPixels = new Set<string>();
+        for (let y = 0; y < guideCanvas.height; y += gridSize) {
+            for (let x = 0; x < guideCanvas.width; x += gridSize) {
+                const idx = (y * guideCanvas.width + x) * 4;
+                if (imageData.data[idx + 3] > 30) { 
+                    newValidPixels.add(`${Math.round(x / gridSize)},${Math.round(y / gridSize)}`);
+                }
+            }
+        }
+        setValidPixels(newValidPixels);
+
+        // Draw on visible canvas (ghost + dashed outline)
         ctx.font = `${size}px Amiri, serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.globalAlpha = 0.1;
+        ctx.globalAlpha = 0.08;
         ctx.fillStyle = '#10b981';
         ctx.fillText(currentLetter.char_arabic, canvas.width / 2, canvas.height / 2);
         ctx.globalAlpha = 1;
         ctx.setLineDash([6, 10]);
         ctx.strokeStyle = '#6ee7b7';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 4;
         ctx.strokeText(currentLetter.char_arabic, canvas.width / 2, canvas.height / 2);
         ctx.setLineDash([]);
     }, [currentLetter]);
 
+    // Handle resize to match canvas internal resolution with CSS display size
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const observer = new ResizeObserver(() => {
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                if (canvas.width !== Math.round(rect.width) || canvas.height !== Math.round(rect.height)) {
+                    canvas.width = rect.width;
+                    canvas.height = rect.height;
+                    if (guideCanvasRef.current) {
+                        guideCanvasRef.current.width = rect.width;
+                        guideCanvasRef.current.height = rect.height;
+                    }
+                    if (currentLetter) {
+                        requestAnimationFrame(() => renderGuide());
+                    }
+                }
+            }
+        });
+
+        observer.observe(canvas);
+        return () => observer.disconnect();
+    }, [currentLetter, renderGuide]);
+
+    // When current letter changes, reset everything and render guide
+    useEffect(() => {
+        if (!currentLetter) return;
+        setFeedbackMsg('');
+        setFeedbackType('');
+        setHasDrawn(false);
+        // Small delay to ensure canvas is ready before render
+        setTimeout(() => requestAnimationFrame(() => renderGuide()), 50);
+    }, [currentLetter, renderGuide]);
+
+    // ── Drawing Handlers ──
     const getPos = (e: React.TouchEvent | React.MouseEvent) => {
         const canvas = canvasRef.current;
         if (!canvas) return { x: 0, y: 0 };
+        
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
+        
+        let clientX = 0;
+        let clientY = 0;
+        
         if ('touches' in e) {
-            return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = (e as React.MouseEvent).clientX;
+            clientY = (e as React.MouseEvent).clientY;
         }
-        return { x: ((e as React.MouseEvent).clientX - rect.left) * scaleX, y: ((e as React.MouseEvent).clientY - rect.top) * scaleY };
+        
+        return { 
+            x: (clientX - rect.left) * scaleX, 
+            y: (clientY - rect.top) * scaleY 
+        };
     };
 
     const startDraw = (e: React.TouchEvent | React.MouseEvent) => {
         isDrawingRef.current = true;
+        setHasDrawn(true);
         const ctx = canvasRef.current?.getContext('2d');
         if (!ctx) return;
         const pos = getPos(e);
@@ -88,67 +239,159 @@ export default function Tracing({ letters, level, student }: TracingProps) {
         const ctx = canvasRef.current?.getContext('2d');
         if (!ctx) return;
         const pos = getPos(e);
-        ctx.lineWidth = 22;
+
+        const gridSize = 6;
+        const key = `${Math.round(pos.x / gridSize)},${Math.round(pos.y / gridSize)}`;
+        const isOnGuide = validPixels.has(key);
+
+        ctx.lineWidth = 32; 
         ctx.lineCap = 'round';
-        ctx.strokeStyle = '#34d399';
         ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = isOnGuide ? '#34d399' : 'rgba(239, 68, 68, 0.4)'; 
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
         ctx.beginPath();
         ctx.moveTo(pos.x, pos.y);
-        const key = `${Math.round(pos.x / 8)},${Math.round(pos.y / 8)}`;
-        setCoveredPoints((prev) => new Set(prev).add(key));
     };
 
     const stopDraw = () => { isDrawingRef.current = false; };
 
+    // ── Clear Canvas ──
     const clearCanvas = () => {
-        const canvas = canvasRef.current;
-        const ctx = canvas?.getContext('2d');
-        if (!ctx || !canvas) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        setCoveredPoints(new Set());
-        if (currentLetter) {
-            const size = Math.min(canvas.width, canvas.height) * 0.7;
-            ctx.font = `${size}px Amiri, serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.globalAlpha = 0.1;
-            ctx.fillStyle = '#10b981';
-            ctx.fillText(currentLetter.char_arabic, canvas.width / 2, canvas.height / 2);
-            ctx.globalAlpha = 1;
-            ctx.setLineDash([6, 10]);
-            ctx.strokeStyle = '#6ee7b7';
-            ctx.lineWidth = 3;
-            ctx.strokeText(currentLetter.char_arabic, canvas.width / 2, canvas.height / 2);
-            ctx.setLineDash([]);
-        }
+        setFeedbackMsg('');
+        setFeedbackType('');
+        setHasDrawn(false);
+        renderGuide();
     };
 
+    // ── Calculate coverage and accuracy using actual pixel data ──
+    const getStats = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return { coverage: 0, accuracy: 0, minChunkCoverage: 0 };
+
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) return { coverage: 0, accuracy: 0, minChunkCoverage: 0 };
+
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+
+        let totalDrawnPixels = 0;
+        let drawnOnCorePixels = 0;
+        let drawnOnValidPixels = 0;
+        const gridSize = 6;
+        
+        // Chunk-based coverage to detect missed dots or detached letter parts
+        const chunkSize = 60; 
+        const chunks = new Map<string, { total: number, drawn: number }>();
+        
+        for (const key of corePixels) {
+            const [gx, gy] = key.split(',').map(Number);
+            const px = gx * gridSize;
+            const py = gy * gridSize;
+            const chunkKey = `${Math.floor(px / chunkSize)},${Math.floor(py / chunkSize)}`;
+            if (!chunks.has(chunkKey)) chunks.set(chunkKey, { total: 0, drawn: 0 });
+            chunks.get(chunkKey)!.total++;
+        }
+
+        for (let y = 0; y < canvas.height; y += gridSize) {
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                const idx = (y * canvas.width + x) * 4;
+                if (data[idx + 3] > 50) {
+                    totalDrawnPixels++;
+                    const key = `${Math.round(x / gridSize)},${Math.round(y / gridSize)}`;
+                    
+                    if (corePixels.has(key)) {
+                        drawnOnCorePixels++;
+                        const chunkKey = `${Math.floor(x / chunkSize)},${Math.floor(y / chunkSize)}`;
+                        if (chunks.has(chunkKey)) {
+                            chunks.get(chunkKey)!.drawn++;
+                        }
+                    }
+                    if (validPixels.has(key)) {
+                        drawnOnValidPixels++;
+                    }
+                }
+            }
+        }
+
+        const coverage = corePixels.size > 0 ? drawnOnCorePixels / corePixels.size : 0;
+        const accuracy = totalDrawnPixels > 0 ? drawnOnValidPixels / totalDrawnPixels : 0;
+
+        let minChunkCoverage = 1.0;
+        for (const chunk of chunks.values()) {
+            if (chunk.total > 5) { // Ignore tiny anti-aliasing artifacts
+                const cov = chunk.drawn / chunk.total;
+                if (cov < minChunkCoverage) minChunkCoverage = cov;
+            }
+        }
+
+        return { coverage, accuracy, minChunkCoverage };
+    }, [corePixels, validPixels]);
+
+    // ── Handle Next / Submit ──
     const handleNext = () => {
-        const coverage = Math.min(100, (coveredPoints.size / 50) * 100);
-        const gained = coverage >= 30 ? Math.round(100 / TOTAL_LETTERS) : 0;
-        setScore((prev) => Math.min(100, prev + gained));
+        if (!hasDrawn) {
+            setFeedbackMsg('Ayo tulis hurufnya dulu! ✏️');
+            setFeedbackType('error');
+            setShakeButton(true);
+            setTimeout(() => setShakeButton(false), 500);
+            return;
+        }
+
+        const { coverage, accuracy, minChunkCoverage } = getStats();
+        // Must cover 50% overall, AND at least 40% of every single 60x60 region of the letter
+        const passed = coverage >= 0.50 && minChunkCoverage >= 0.40 && accuracy >= 0.98;
+
+        if (!passed) {
+            let msg = 'Coba tebalkan lagi yang rapi ya! ✏️';
+            if (accuracy < 0.98) msg = 'Coretannya ada yang keluar batas (warna merah)! ✏️';
+            else if (minChunkCoverage < 0.40) msg = 'Ada bagian huruf atau titik yang terlewat! 🔍';
+            else if (coverage < 0.50) msg = 'Garis putus-putusnya belum ditebalkan semua! 🔍';
+                
+            setFeedbackMsg(msg);
+            setFeedbackType('error');
+            setShakeButton(true);
+            setTimeout(() => setShakeButton(false), 500);
+            return;
+        }
+
+        const gained = passed ? Math.round(100 / TOTAL_LETTERS) : Math.round((100 / TOTAL_LETTERS) * 0.3);
+        const successMsg = passed
+            ? SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)]
+            : 'Tidak apa-apa, ayo lanjut! 💪';
+        setFeedbackMsg(successMsg);
+        setFeedbackType('success');
+        setScore(prev => Math.min(100, prev + gained));
 
         if (currentIdx + 1 >= TOTAL_LETTERS) {
-            setIsFinished(true);
-            if (student) {
-                const finalScore = Math.min(100, score + gained);
-                axios.post('/game/score', {
-                    student_id: student.id, level_id: level.id, score: finalScore,
-                    total_questions: TOTAL_LETTERS, correct_answers: TOTAL_LETTERS,
-                    duration_seconds: Math.round((Date.now() - startTime.current) / 1000),
-                }).catch(console.error);
-            }
+            setTimeout(() => {
+                setIsFinished(true);
+                if (student) {
+                    const finalScore = Math.min(100, score + gained);
+                    axios.post('/game/score', {
+                        student_id: student.id, level_id: level.id, score: finalScore,
+                        total_questions: TOTAL_LETTERS, correct_answers: TOTAL_LETTERS,
+                        duration_seconds: Math.round((Date.now() - startTime.current) / 1000),
+                    }).catch(console.error);
+                }
+            }, 1200);
         } else {
             setShowSuccess(true);
-            setTimeout(() => { setShowSuccess(false); setCurrentIdx((prev) => prev + 1); }, 1000);
+            setTimeout(() => {
+                setShowSuccess(false);
+                setCurrentIdx(prev => prev + 1);
+            }, 1200);
         }
     };
 
     const restart = () => {
         const shuffled = [...letters].sort(() => Math.random() - 0.5).slice(0, TOTAL_LETTERS);
-        setQueue(shuffled); setCurrentIdx(0); setScore(0); setIsFinished(false); startTime.current = Date.now();
+        setQueue(shuffled);
+        setCurrentIdx(0);
+        setScore(0);
+        setIsFinished(false);
+        setShowGuidePoints(true);
+        startTime.current = Date.now();
     };
 
     // ── Result Screen ──
@@ -175,13 +418,25 @@ export default function Tracing({ letters, level, student }: TracingProps) {
                     ))}</div>
                     <div className="w-full flex gap-2">
                         <button onClick={() => router.visit(`/game/select${student ? `?student_id=${student.id}` : ''}`)}
-                            className="flex-1 bg-white border-2 border-slate-200 text-slate-600 font-black py-2 rounded-full flex items-center justify-center gap-1 active:scale-95 transition-transform text-sm">
+                            className="flex-1 bg-white border-2 border-slate-200 text-slate-600 font-black py-2 rounded-full flex items-center justify-center gap-1 active:scale-95 transition-transform text-xs sm:text-sm">
                             <ArrowLeft size={16} /> Kembali
                         </button>
+                        
                         <button onClick={restart}
-                            className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-black py-2 rounded-full flex items-center justify-center gap-1 active:scale-95 transition-transform text-sm shadow-lg">
-                            <RotateCcw size={16} /> Main Lagi
+                            className={`flex-1 font-black py-2 rounded-full flex items-center justify-center gap-1 active:scale-95 transition-transform text-xs sm:text-sm shadow-sm border-2 ${
+                                (nextLevel && score >= level.minimum_passing_score)
+                                ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-transparent shadow-lg'
+                            }`}>
+                            <RotateCcw size={16} /> { (nextLevel && score >= level.minimum_passing_score) ? 'Ulangi' : 'Main Lagi' }
                         </button>
+
+                        {nextLevel && score >= level.minimum_passing_score && (
+                            <button onClick={() => router.visit(`/game/play/${nextLevel.id}${student ? `?student_id=${student.id}` : ''}`)}
+                                className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-black py-2 rounded-full flex items-center justify-center gap-1 active:scale-95 transition-transform text-xs sm:text-sm shadow-lg border-2 border-transparent">
+                                Lanjut <SkipForward size={16} />
+                            </button>
+                        )}
                     </div>
                 </motion.div>
             </div>
@@ -193,7 +448,8 @@ export default function Tracing({ letters, level, student }: TracingProps) {
         <div className="h-screen-safe overflow-hidden bg-cover bg-center bg-no-repeat flex flex-col font-sans relative"
             style={{ backgroundImage: "url('/images/background%20level.png')" }}>
 
-            {/* Header */}
+            <canvas ref={guideCanvasRef} width={600} height={400} className="hidden" />
+
             <div className="shrink-0 z-30 px-3 py-2 flex justify-between items-center w-full max-w-5xl mx-auto">
                 <button onClick={() => router.visit(`/game/select?student_id=${student?.id ?? ''}`)}
                     className="flex items-center gap-1 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full text-indigo-700 font-extrabold text-xs hover:bg-white shadow-sm transition active:scale-95">
@@ -217,10 +473,8 @@ export default function Tracing({ letters, level, student }: TracingProps) {
                 </div>
             </div>
 
-            {/* Game Content */}
             <div className="flex-1 min-h-0 flex flex-row items-stretch max-w-5xl mx-auto w-full px-3 gap-3 z-10 pb-2">
 
-                {/* Letter Info Card — Left */}
                 {currentLetter && (
                     <div className="w-[30%] flex flex-col items-center justify-center gap-2">
                         <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-3 py-1 rounded-full text-[9px] sm:text-xs font-black shadow-lg border-2 border-white/50 whitespace-nowrap">
@@ -237,37 +491,51 @@ export default function Tracing({ letters, level, student }: TracingProps) {
                             </div>
                         </div>
 
-                        {/* Buttons under the letter card */}
                         <div className="flex gap-1.5 w-full">
                             <button onClick={clearCanvas}
                                 className="flex-1 flex items-center justify-center gap-1 bg-white border-2 border-slate-200 text-slate-600 px-2 py-1.5 rounded-xl font-extrabold text-[10px] sm:text-xs transition-all active:scale-95 shadow-sm hover:bg-slate-50">
                                 <Eraser className="w-3 h-3" /> Hapus
                             </button>
-                            <button onClick={handleNext}
-                                className="flex-[2] bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-2 py-1.5 rounded-xl font-black text-[10px] sm:text-xs shadow-lg transition-all active:scale-95 hover:from-indigo-600 hover:to-purple-600 flex items-center justify-center gap-1 border-2 border-indigo-300/50">
+                            <motion.button
+                                onClick={handleNext}
+                                animate={shakeButton ? { x: [-8, 8, -6, 6, -3, 3, 0] } : {}}
+                                transition={{ duration: 0.4 }}
+                                className={`flex-[2] px-2 py-1.5 rounded-xl font-black text-[10px] sm:text-xs shadow-lg transition-all active:scale-95 flex items-center justify-center gap-1 border-2 ${
+                                    hasDrawn
+                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 border-indigo-300/50'
+                                        : 'bg-slate-200 text-slate-400 border-slate-300/50 cursor-not-allowed'
+                                }`}
+                            >
                                 <CheckCircle2 className="w-3 h-3" />
                                 {currentIdx + 1 >= TOTAL_LETTERS ? 'Selesai! 🎉' : 'Lanjut →'}
-                            </button>
+                            </motion.button>
                         </div>
 
-                        {/* Success/Hint bar */}
                         <AnimatePresence mode="wait">
-                            {showSuccess ? (
-                                <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
+                            {feedbackType === 'error' ? (
+                                <motion.div key="error"
+                                    initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
+                                    className="flex items-center justify-center gap-1 bg-red-50 text-red-600 border border-red-200 text-[10px] font-black py-1.5 rounded-full px-3 shadow-sm w-full">
+                                    {feedbackMsg}
+                                </motion.div>
+                            ) : feedbackType === 'success' || showSuccess ? (
+                                <motion.div key="success"
+                                    initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
                                     className="flex items-center justify-center gap-1 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] font-black py-1.5 rounded-full px-3 shadow-sm w-full">
-                                    ✅ Bagus! Lanjut!
+                                    {feedbackMsg || '✅ Bagus! Lanjut!'}
                                 </motion.div>
                             ) : (
-                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                <motion.div key="hint"
+                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                                     className="flex items-center justify-center gap-1 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-white/50 text-[10px] font-bold text-amber-700 w-full">
-                                    <Trophy className="w-3 h-3 text-amber-500" /> Semangat!
+                                    <Trophy className="w-3 h-3 text-amber-500" />
+                                    Ikuti panduan garisnya! ✏️
                                 </motion.div>
                             )}
                         </AnimatePresence>
                     </div>
                 )}
 
-                {/* Canvas Area — Right */}
                 <div className="flex-1 flex flex-col items-center justify-center">
                     <div className="relative w-full h-full rounded-[20px] overflow-hidden border-4 border-dashed border-indigo-200 bg-white shadow-md flex flex-col justify-center items-center">
                         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10">
@@ -275,8 +543,9 @@ export default function Tracing({ letters, level, student }: TracingProps) {
                                 ✏️ Ikuti garis putus-putus
                             </div>
                         </div>
-                        <canvas ref={canvasRef} width={600} height={400}
-                            className="w-full h-full touch-none cursor-crosshair object-contain"
+
+                        <canvas ref={canvasRef}
+                            className="absolute inset-0 w-full h-full touch-none cursor-crosshair"
                             onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
                             onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw}
                         />

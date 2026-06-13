@@ -3,13 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { router } from '@inertiajs/react';
 import { useGameEngine, LetterWithHarakat } from '@/Hooks/useGameEngine';
 import { useAudioPlayer } from '@/Hooks/useAudioPlayer';
-import { Heart, Volume2, X, RotateCcw, Trophy, Sparkles } from 'lucide-react';
+import { Heart, Volume2, X, RotateCcw, ArrowLeft, SkipForward, Sparkles } from 'lucide-react';
 import MascotHufi from '@/Components/MascotHufi';
 import axios from 'axios';
 
 interface Level { id: number; title: string; minimum_passing_score: number; }
 interface Student { id: number; name: string; }
-interface Props { letters: LetterWithHarakat[]; level: Level; student?: Student | null; }
+interface Props { letters: LetterWithHarakat[]; level: Level; student?: Student | null; nextLevel?: Level | null; }
 
 const TOTAL = 10;
 
@@ -44,7 +44,7 @@ function StarRow({ score }: { score: number }) {
     );
 }
 
-export default function MultipleChoice({ letters, level, student }: Props) {
+export default function MultipleChoice({ letters, level, student, nextLevel }: Props) {
     const { playAudio } = useAudioPlayer();
     const [hearts, setHearts] = useState(3);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -53,6 +53,11 @@ export default function MultipleChoice({ letters, level, student }: Props) {
         generateQuestions, handleAnswer, getDurationSeconds,
         currentQuestion, currentIdx, wrongAnswersList
     } = useGameEngine(letters, 'multiple_choice', TOTAL);
+
+    const restart = () => {
+        setHearts(3);
+        generateQuestions();
+    };
 
     useEffect(() => {
         if (!isFinished || !student) return;
@@ -115,16 +120,28 @@ export default function MultipleChoice({ letters, level, student }: Props) {
                         </p>
                     )}
                     <div className="w-full flex flex-col gap-2 mt-1">
-                        {passed && (
-                            <button onClick={() => router.visit(`/game/select?student_id=${student?.id ?? ''}`)}
-                                className="w-full bg-gradient-to-r from-emerald-400 to-green-500 text-white font-black py-2.5 rounded-full shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
-                                Lanjut Level →
+                       <div className="w-full flex gap-2">
+                        <button onClick={() => router.visit(`/game/select${student ? `?student_id=${student.id}` : ''}`)}
+                            className="flex-1 bg-white border-2 border-slate-200 text-slate-600 font-black py-2 rounded-full flex items-center justify-center gap-1 active:scale-95 transition-transform text-xs sm:text-sm">
+                            <ArrowLeft size={16} /> Kembali
+                        </button>
+                        
+                        <button onClick={restart}
+                            className={`flex-1 font-black py-2 rounded-full flex items-center justify-center gap-1 active:scale-95 transition-transform text-xs sm:text-sm shadow-sm border-2 ${
+                                (nextLevel && passed)
+                                ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-transparent shadow-lg'
+                            }`}>
+                            <RotateCcw size={16} /> { (nextLevel && passed) ? 'Ulangi' : 'Main Lagi' }
+                        </button>
+
+                        {nextLevel && passed && (
+                            <button onClick={() => router.visit(`/game/play/${nextLevel.id}${student ? `?student_id=${student.id}` : ''}`)}
+                                className="flex-1 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-black py-2 rounded-full flex items-center justify-center gap-1 active:scale-95 transition-transform text-xs sm:text-sm shadow-lg border-2 border-transparent">
+                                Lanjut <SkipForward size={16} />
                             </button>
                         )}
-                        <button onClick={() => { setHearts(3); generateQuestions(); }}
-                            className="w-full bg-white border-2 border-slate-200 text-slate-600 font-black py-2 rounded-full flex items-center justify-center gap-2 active:scale-95 transition-transform">
-                            <RotateCcw className="w-4 h-4" /> Main Lagi
-                        </button>
+                    </div>
                     </div>
                 </motion.div>
             </div>
