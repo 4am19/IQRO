@@ -485,7 +485,7 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
                             <div className="text-5xl sm:text-6xl md:text-8xl font-arabic font-black text-indigo-900 mb-2 md:mb-3 leading-none drop-shadow-sm">{currentLetter.char_arabic}</div>
                             <div className="flex items-center justify-center gap-2 md:gap-3 bg-indigo-50 px-3 md:px-6 py-2 md:py-3 rounded-full border border-indigo-100 shadow-sm w-full mt-1 md:mt-2">
                                 <p className="text-indigo-700 font-black text-[10px] sm:text-xs md:text-base flex-1 text-center whitespace-nowrap">"{currentLetter.name}" — "{currentLetter.read_latin}"</p>
-                                <button onClick={() => playAudio(currentLetter.char_arabic)}
+                                <button onClick={() => playAudio(currentLetter.char_arabic, currentLetter.char_arabic)}
                                     className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-1.5 md:p-2.5 rounded-full hover:from-indigo-600 hover:to-purple-600 transition-colors active:scale-90 shadow-md">
                                     <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                                 </button>

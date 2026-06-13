@@ -209,7 +209,7 @@ export default function MultipleChoice({ letters, level, student, nextLevel }: P
                                     {currentQuestion!.target.displayChar}
                                 </span>
                             </div>
-                            <button onClick={() => playAudio(currentQuestion!.target.displayChar)}
+                            <button onClick={() => playAudio(currentQuestion!.target.displayChar, currentQuestion!.target.displayChar)}
                                 className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-extrabold text-[10px] sm:text-xs px-4 py-1.5 rounded-full shadow-lg transition active:scale-95 flex items-center justify-center gap-1.5 mx-auto border-2 border-indigo-300/50">
                                 <Volume2 className="w-3 h-3 sm:w-4 sm:h-4" /> Dengarkan
                             </button>
@@ -247,7 +247,7 @@ export default function MultipleChoice({ letters, level, student, nextLevel }: P
                                     transition={isCorrect ? { duration: 0.5, repeat: 2 } : { duration: 0.35 }}
                                     whileHover={!feedback ? { scale: 1.03 } : {}}
                                     whileTap={!feedback ? { scale: 0.95 } : {}}
-                                    onClick={() => { if (!feedback) { if (opt.isCorrect) playAudio(opt.displayChar); handleAnswer(opt.isCorrect); }}}
+                                    onClick={() => { if (!feedback) { if (opt.isCorrect) playAudio(opt.displayChar, opt.displayChar); handleAnswer(opt.isCorrect); }}}
                                     disabled={!!feedback}
                                     className={`relative flex items-center justify-center h-12 sm:h-16 bg-white border-[3px] rounded-2xl shadow-md transition-all
                                         ${!feedback ? `hover:${style.bg} hover:${style.border}` : ''}

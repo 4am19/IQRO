@@ -15,7 +15,7 @@ export function useAudioPlayer() {
         window.speechSynthesis.speak(utterance);
     };
 
-    const playAudio = useCallback((text: string, localAudioName?: string) => {
+    const playAudio = useCallback((textToSpeak: string, baseLetterArabic?: string, type: 'polos' | 'fathah' | 'kasrah' | 'dhammah' = 'polos') => {
         // Stop any current audio
         if (audioRef.current) {
             audioRef.current.pause();
@@ -25,17 +25,31 @@ export function useAudioPlayer() {
             window.speechSynthesis.cancel();
         }
 
-        if (localAudioName) {
-            const fileName = localAudioName.toLowerCase() + '.mp3';
-            const audio = new Audio(`/audio/${fileName}`);
+        if (baseLetterArabic) {
+            let folderPath = '/audio/';
+            if (type === 'fathah') folderPath = '/audio/fathah/';
+            else if (type === 'kasrah') folderPath = '/audio/kasroh/';
+            else if (type === 'dhammah') folderPath = '/audio/dammah/';
+            
+            // Special file names mapping
+            let fileName = `${baseLetterArabic}.m4a`;
+            if (type === 'polos' && baseLetterArabic === 'ك') {
+                fileName = 'ك.mpeg';
+            } else if (type === 'fathah' && (baseLetterArabic === 'ط' || baseLetterArabic === 'ك')) {
+                fileName = `${baseLetterArabic}.mpeg`;
+            } else if (type === 'kasrah' && baseLetterArabic === 'ظ') {
+                fileName = 'ظ dhi.m4a';
+            }
+
+            const audio = new Audio(`${folderPath}${fileName}`);
             
             audio.play().catch(() => {
                 // Fallback to TTS if file not found or browser blocked it
-                playTTS(text);
+                playTTS(textToSpeak);
             });
             audioRef.current = audio;
         } else {
-            playTTS(text);
+            playTTS(textToSpeak);
         }
     }, []);
 

@@ -470,7 +470,7 @@ export default function LearnIndex({ letters = [], student }: Props) {
                         </div>
                         <button
                             className="bg-[#5b51d8] hover:bg-indigo-500 text-white px-5 py-3 rounded-full text-xs font-bold flex items-center gap-2 shrink-0 transition-all active:scale-95 shadow-md whitespace-nowrap border border-indigo-400/30"
-                            onClick={() => { if (letters[0]) playAudio(letters[0].char_arabic, letters[0].name); }}
+                            onClick={() => { if (letters[0]) playAudio(letters[0].char_arabic, letters[0].char_arabic, 'polos'); }}
                         >
                             <Volume2 className="w-4 h-4" />
                             Ketuk untuk suara
@@ -511,7 +511,7 @@ export default function LearnIndex({ letters = [], student }: Props) {
                                     whileHover={{ scale: 1.05, y: -2 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => {
-                                        playAudio(l.char_arabic, l.name);
+                                        playAudio(l.char_arabic, l.char_arabic, 'polos');
                                         setCurrentIdx(idx);
                                         setView('detail');
                                     }}
@@ -624,7 +624,7 @@ export default function LearnIndex({ letters = [], student }: Props) {
                                                 <span className="font-sans font-black text-[#3730a3] select-none leading-none drop-shadow-md group-hover:scale-105 transition-transform duration-300 text-[7rem] landscape:text-[4rem] lg:landscape:text-[7rem]">
                                                     {letter.char_arabic}
                                                 </span>
-                                                <button onClick={() => playAudio(letter.char_arabic, letter.name)}
+                                                <button onClick={() => playAudio(letter.char_arabic, letter.char_arabic, 'polos')}
                                                     className="absolute -bottom-2 -right-2 w-14 h-14 landscape:w-8 landscape:h-8 lg:landscape:w-14 lg:landscape:h-14 bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/40 transition-all active:scale-90 border-[3px] landscape:border-2 lg:landscape:border-[3px] border-white group-hover:shadow-indigo-500/60 group-hover:-translate-y-1">
                                                     <Volume2 className="w-7 h-7 landscape:w-4 landscape:h-4 lg:landscape:w-7 lg:landscape:h-7" />
                                                 </button>
@@ -656,7 +656,7 @@ export default function LearnIndex({ letters = [], student }: Props) {
                                                             entry={letter.fathah} 
                                                             label="Fathah" 
                                                             color={{ bg: 'bg-[#f0fdf4]', border: 'border-green-200', text: 'text-green-600', btn: 'bg-green-500' }}
-                                                            onClick={() => playAudio(letter.fathah!.arabic)} 
+                                                            onClick={() => playAudio(letter.fathah!.arabic, letter.char_arabic, 'fathah')} 
                                                         />
                                                     )}
                                                     {letter.kasrah && (
@@ -664,7 +664,7 @@ export default function LearnIndex({ letters = [], student }: Props) {
                                                             entry={letter.kasrah} 
                                                             label="Kasrah" 
                                                             color={{ bg: 'bg-[#faf5ff]', border: 'border-fuchsia-200', text: 'text-indigo-900', btn: 'bg-indigo-500' }}
-                                                            onClick={() => playAudio(letter.kasrah!.arabic)} 
+                                                            onClick={() => playAudio(letter.kasrah!.arabic, letter.char_arabic, 'kasrah')} 
                                                         />
                                                     )}
                                                     {letter.dhammah && (
@@ -672,7 +672,7 @@ export default function LearnIndex({ letters = [], student }: Props) {
                                                             entry={letter.dhammah} 
                                                             label="Dammah" 
                                                             color={{ bg: 'bg-[#fffbeb]', border: 'border-amber-200', text: 'text-amber-700', btn: 'bg-amber-500' }}
-                                                            onClick={() => playAudio(letter.dhammah!.arabic)} 
+                                                            onClick={() => playAudio(letter.dhammah!.arabic, letter.char_arabic, 'dhammah')} 
                                                         />
                                                     )}
                                                 </div>
