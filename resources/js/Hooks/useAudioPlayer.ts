@@ -3,6 +3,23 @@ import { useCallback, useRef } from 'react';
 // Global audio cache to prevent re-fetching and eliminate playback delay
 const audioCache = new Map<string, HTMLAudioElement>();
 
+// Web Audio API context for volume boosting (karena default volume HTML Audio maksimal 1)
+let audioCtx: AudioContext | null = null;
+const audioGainNodes = new Map<HTMLAudioElement, GainNode>();
+
+function initAudioContext() {
+    if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
+        }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    return audioCtx;
+}
+
 export function useAudioPlayer() {
     const ttsRef = useRef<SpeechSynthesisUtterance | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -38,6 +55,7 @@ export function useAudioPlayer() {
         if (!audioCache.has(audioPath)) {
             const audio = new Audio(audioPath);
             audio.preload = 'auto'; // Instruct browser to preload audio data
+            audio.crossOrigin = 'anonymous'; // Diperlukan untuk Web Audio API
             audioCache.set(audioPath, audio);
         }
         
@@ -57,6 +75,25 @@ export function useAudioPlayer() {
         if (baseLetterArabic) {
             const audioPath = preloadAudio(baseLetterArabic, type);
             const audio = audioCache.get(audioPath)!;
+            
+            // Boost volume menggunakan Web Audio API
+            try {
+                const ctx = initAudioContext();
+                if (ctx && !audioGainNodes.has(audio)) {
+                    const source = ctx.createMediaElementSource(audio);
+                    const gainNode = ctx.createGain();
+                    
+                    // Jika huruf berharokat, perbesar suaranya hingga 4x lipat. Jika polos 2x lipat.
+                    const boostMultiplier = type !== 'polos' ? 4.0 : 2.0;
+                    gainNode.gain.value = boostMultiplier; 
+                    
+                    source.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+                    audioGainNodes.set(audio, gainNode);
+                }
+            } catch (e) {
+                console.warn("Audio boost failed:", e);
+            }
             
             // Reset playback time for immediate play
             audio.currentTime = 0;
