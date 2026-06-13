@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import MascotHufi from '@/Components/MascotHufi';
 import MobileNav from '@/Components/Organisms/MobileNav';
 import { useBGM } from '@/Hooks/useBGM';
+import { Volume2, VolumeX, Volume1 } from 'lucide-react';
 
 interface Props { auth: { user: { id: number; name: string } | null }; }
 
@@ -313,58 +314,105 @@ function FeatureCard({ emoji, label, sub, gradient, glow, delay }: {
 function SoundControl() {
     const { isMuted, isPlaying, volume, toggle, setVolume } = useBGM();
     const [showSlider, setShowSlider] = useState(false);
+    const [isHoveringThumb, setIsHoveringThumb] = useState(false);
+
+    // Calculate filled percentage for the track
+    const fillPercent = isMuted ? 0 : volume * 100;
 
     return (
-        <div 
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full transition-all border border-white/10 relative"
+        <motion.div 
+            className={`flex items-center backdrop-blur-sm rounded-[24px] transition-all border relative shadow-lg ${
+                showSlider ? 'bg-white/20 border-white/20 pr-4' : 'bg-white/10 hover:bg-white/20 border-white/10'
+            }`}
             onMouseEnter={() => setShowSlider(true)}
             onMouseLeave={() => setShowSlider(false)}
-            onTouchStart={() => setShowSlider(!showSlider)}
+            onTouchStart={() => setShowSlider(true)}
+            animate={{ width: showSlider ? 160 : 48 }}
+            transition={{ type: 'spring', bounce: 0.25, duration: 0.5 }}
+            style={{ overflow: 'hidden' }}
         >
             <motion.button
-                whileTap={{ scale: 0.9 }}
-                className={`relative p-3 rounded-full transition-all ${
-                    isMuted ? 'text-white/50' : 'text-white'
+                whileTap={{ scale: 0.85 }}
+                className={`relative w-12 h-12 flex items-center justify-center shrink-0 transition-colors z-10 ${
+                    isMuted ? 'text-white/40 hover:text-white/80' : 'text-amber-400 hover:text-amber-300'
                 }`}
                 onClick={(e) => { e.stopPropagation(); toggle(); }}
             >
-                {/* Pulsing ring when playing */}
-                {isPlaying && (
+                {/* Pulsing ring when playing & not muted */}
+                {isPlaying && !isMuted && (
                     <motion.span 
-                        className="absolute inset-0 rounded-full border-2 border-indigo-400/60 pointer-events-none"
-                        animate={{ scale: [1, 1.4, 1.4], opacity: [0.7, 0, 0] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
+                        className="absolute inset-2 rounded-full border-2 border-amber-400/40 pointer-events-none"
+                        animate={{ scale: [1, 1.5, 1.5], opacity: [0.8, 0, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
                     />
                 )}
-                <span className="text-xl">{isMuted ? '🔇' : '🔊'}</span>
+                
+                {isMuted || volume === 0 ? (
+                    <VolumeX className="w-5 h-5" strokeWidth={2.5} />
+                ) : volume < 0.5 ? (
+                    <Volume1 className="w-5 h-5" strokeWidth={2.5} />
+                ) : (
+                    <Volume2 className="w-5 h-5" strokeWidth={2.5} />
+                )}
             </motion.button>
 
             <AnimatePresence>
                 {showSlider && (
                     <motion.div
-                        initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: 100, opacity: 1 }}
-                        exit={{ width: 0, opacity: 0 }}
-                        className="overflow-hidden pr-4 flex items-center"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex-1 flex flex-col justify-center min-w-[90px]"
                     >
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value={volume}
-                            onChange={(e) => {
-                                if (isMuted && parseFloat(e.target.value) > 0) toggle();
-                                setVolume(parseFloat(e.target.value));
-                            }}
-                            className="w-24 h-1.5 bg-white/30 rounded-lg appearance-none cursor-pointer outline-none accent-indigo-400"
-                            onClick={(e) => e.stopPropagation()}
-                            onTouchStart={(e) => e.stopPropagation()}
-                        />
+                        <div className="flex items-center justify-between mb-1">
+                            <span className="text-[9px] font-bold text-white/60 uppercase tracking-wider">Volume</span>
+                            <span className="text-[10px] font-black text-amber-400">{Math.round(fillPercent)}%</span>
+                        </div>
+                        
+                        {/* Custom Slider Input */}
+                        <div className="relative w-full h-4 flex items-center group cursor-pointer z-10"
+                            onMouseEnter={() => setIsHoveringThumb(true)}
+                            onMouseLeave={() => setIsHoveringThumb(false)}
+                        >
+                            {/* Track Background */}
+                            <div className="absolute w-full h-1.5 bg-indigo-950/50 rounded-full overflow-hidden shadow-inner">
+                                {/* Track Filled */}
+                                <motion.div 
+                                    className="h-full bg-gradient-to-r from-indigo-500 to-amber-400 rounded-full"
+                                    style={{ width: `${fillPercent}%` }}
+                                    transition={{ type: 'tween', duration: 0.1 }}
+                                />
+                            </div>
+                            
+                            {/* Invisible native range input on top for functionality */}
+                            <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value={isMuted ? 0 : volume}
+                                onChange={(e) => {
+                                    if (isMuted && parseFloat(e.target.value) > 0) toggle();
+                                    setVolume(parseFloat(e.target.value));
+                                }}
+                                className="absolute w-full h-full opacity-0 cursor-pointer z-20"
+                                onClick={(e) => e.stopPropagation()}
+                                onTouchStart={(e) => e.stopPropagation()}
+                            />
+                            
+                            {/* Custom Thumb */}
+                            <motion.div 
+                                className="absolute h-3.5 w-3.5 bg-white rounded-full shadow-[0_0_10px_rgba(251,191,36,0.6)] border-2 border-amber-400 pointer-events-none z-10"
+                                style={{ left: `calc(${fillPercent}% - 7px)` }}
+                                animate={{ scale: isHoveringThumb ? 1.3 : 1 }}
+                                transition={{ type: 'spring', damping: 15 }}
+                            />
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </motion.div>
     );
 }
 
