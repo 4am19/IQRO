@@ -4,6 +4,7 @@ import { router } from '@inertiajs/react';
 import { useAudioPlayer } from '@/Hooks/useAudioPlayer';
 import { Trophy, RotateCcw, ArrowLeft, Eraser, CheckCircle2, Volume2, X, SkipForward } from 'lucide-react';
 import axios from 'axios';
+import FullscreenWrapper from '@/Components/Organisms/FullscreenWrapper';
 
 interface Letter { id: number; char_arabic: string; name: string; read_latin: string; }
 interface Level { id: number; title: string; minimum_passing_score: number; }
@@ -398,6 +399,7 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
     if (isFinished) {
         const stars = score >= 80 ? 3 : score >= 50 ? 2 : score > 0 ? 1 : 0;
         return (
+            <FullscreenWrapper>
             <div className="h-screen-safe overflow-auto bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center p-4 pt-8"
                 style={{ backgroundImage: "url('/images/background%20level.png')" }}>
                 <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
@@ -440,109 +442,107 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
                     </div>
                 </motion.div>
             </div>
+            </FullscreenWrapper>
         );
     }
 
     // ── Game Screen ──
     return (
+        <FullscreenWrapper>
         <div className="h-screen-safe overflow-hidden bg-cover bg-center bg-no-repeat flex flex-col font-sans relative"
             style={{ backgroundImage: "url('/images/background%20level.png')" }}>
 
             <canvas ref={guideCanvasRef} width={600} height={400} className="hidden" />
 
-            <div className="shrink-0 z-30 px-3 py-2 flex justify-between items-center w-full max-w-5xl mx-auto">
+            <div className="shrink-0 z-30 px-3 py-2 flex justify-between items-center w-full max-w-6xl mx-auto">
                 <button onClick={() => router.visit(`/game/select?student_id=${student?.id ?? ''}`)}
-                    className="flex items-center gap-1 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full text-indigo-700 font-extrabold text-xs hover:bg-white shadow-sm transition active:scale-95">
-                    <X className="w-3.5 h-3.5 stroke-[3]" /> Keluar
+                    className="flex items-center gap-1 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full text-indigo-700 font-extrabold text-xs sm:text-sm hover:bg-white shadow-sm transition active:scale-95">
+                    <X className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3]" /> Keluar
                 </button>
                 <div className="flex items-center gap-2">
-                    <div className="bg-white/80 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                    <div className="bg-white/80 backdrop-blur-md px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
                         <span className="text-amber-500 text-sm">⭐</span>
-                        <span className="text-xs font-black text-slate-700">Skor: {score}</span>
+                        <span className="text-[10px] sm:text-xs font-black text-slate-700">Skor: {score}</span>
                     </div>
-                    <div className="w-24 sm:w-32 flex items-center gap-1.5 bg-white/80 backdrop-blur-md px-2.5 py-1 rounded-full shadow-sm">
+                    <div className="w-24 sm:w-32 flex items-center gap-1.5 bg-white/80 backdrop-blur-md px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-sm">
                         <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
                             <motion.div className="h-full bg-gradient-to-r from-emerald-400 to-green-500 rounded-full"
                                 animate={{ width: `${((currentIdx) / TOTAL_LETTERS) * 100}%` }} transition={{ duration: 0.4 }} />
                         </div>
-                        <span className="text-[9px] font-black text-slate-500">{currentIdx + 1}/{TOTAL_LETTERS}</span>
+                        <span className="text-[9px] sm:text-[10px] font-black text-slate-500">{currentIdx + 1}/{TOTAL_LETTERS}</span>
                     </div>
                 </div>
-                <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm font-black text-[10px]">
+                <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1 sm:gap-1.5 shadow-sm font-black text-[10px] sm:text-xs">
                     ✏️ {currentIdx + 1}/{TOTAL_LETTERS}
                 </div>
             </div>
 
-            <div className="flex-1 min-h-0 flex flex-row items-stretch max-w-5xl mx-auto w-full px-3 gap-3 z-10 pb-2">
+            <div className="flex-1 min-h-0 flex flex-col md:flex-row items-center md:items-stretch max-w-6xl mx-auto w-full px-3 sm:px-8 gap-3 sm:gap-4 md:gap-10 z-10 pb-3 md:pb-6 pt-1">
 
                 {currentLetter && (
-                    <div className="w-[30%] flex flex-col items-center justify-center gap-2">
-                        <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-3 py-1 rounded-full text-[9px] sm:text-xs font-black shadow-lg border-2 border-white/50 whitespace-nowrap">
-                            Tebalkan huruf:
-                        </div>
-                        <div className="bg-white/95 backdrop-blur-md border-[3px] border-white rounded-[20px] p-3 sm:p-4 text-center shadow-xl relative w-full">
-                            <div className="text-5xl sm:text-6xl font-arabic text-indigo-900 mb-1 leading-none drop-shadow-sm">{currentLetter.char_arabic}</div>
-                            <div className="flex items-center justify-center gap-2">
-                                <p className="text-indigo-600 font-extrabold text-[10px] sm:text-xs">"{currentLetter.name}" — "{currentLetter.read_latin}"</p>
+                    <div className="w-full md:w-[35%] flex flex-col items-center justify-center gap-2 md:gap-4 max-w-sm md:max-w-md mx-auto">
+                        <div className="bg-white/95 backdrop-blur-md border-4 border-white rounded-[24px] md:rounded-[28px] p-4 sm:p-5 md:p-8 text-center shadow-2xl relative w-full flex flex-col items-center">
+                            <div className="text-5xl sm:text-6xl md:text-8xl font-arabic font-black text-indigo-900 mb-2 md:mb-3 leading-none drop-shadow-sm">{currentLetter.char_arabic}</div>
+                            <div className="flex items-center justify-center gap-2 md:gap-3 bg-indigo-50 px-3 md:px-6 py-2 md:py-3 rounded-full border border-indigo-100 shadow-sm w-full mt-1 md:mt-2">
+                                <p className="text-indigo-700 font-black text-[10px] sm:text-xs md:text-base flex-1 text-center whitespace-nowrap">"{currentLetter.name}" — "{currentLetter.read_latin}"</p>
                                 <button onClick={() => playAudio(currentLetter.char_arabic)}
-                                    className="bg-indigo-500 text-white p-1.5 rounded-full hover:bg-indigo-600 transition-colors active:scale-90 shadow-md">
-                                    <Volume2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-1.5 md:p-2.5 rounded-full hover:from-indigo-600 hover:to-purple-600 transition-colors active:scale-90 shadow-md">
+                                    <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                                 </button>
                             </div>
                         </div>
 
-                        <div className="flex gap-1.5 w-full">
+                        <div className="flex gap-2 w-full mt-1">
                             <button onClick={clearCanvas}
-                                className="flex-1 flex items-center justify-center gap-1 bg-white border-2 border-slate-200 text-slate-600 px-2 py-1.5 rounded-xl font-extrabold text-[10px] sm:text-xs transition-all active:scale-95 shadow-sm hover:bg-slate-50">
-                                <Eraser className="w-3 h-3" /> Hapus
+                                className="flex-1 flex items-center justify-center gap-1 md:gap-2 bg-white border-2 md:border-4 border-slate-200 text-slate-600 px-2 sm:px-4 py-2 sm:py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] sm:text-sm md:text-lg transition-all active:scale-95 shadow-md hover:bg-slate-50">
+                                <Eraser className="w-3 h-3 md:w-5 md:h-5" /> Hapus
                             </button>
                             <motion.button
                                 onClick={handleNext}
                                 animate={shakeButton ? { x: [-8, 8, -6, 6, -3, 3, 0] } : {}}
                                 transition={{ duration: 0.4 }}
-                                className={`flex-[2] px-2 py-1.5 rounded-xl font-black text-[10px] sm:text-xs shadow-lg transition-all active:scale-95 flex items-center justify-center gap-1 border-2 ${
+                                className={`flex-[1.5] px-2 sm:px-4 py-2 sm:py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] sm:text-sm md:text-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-1 md:gap-2 border-2 md:border-4 ${
                                     hasDrawn
-                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600 border-indigo-300/50'
+                                        ? 'bg-gradient-to-r from-emerald-400 to-green-500 text-white hover:from-emerald-500 hover:to-green-600 border-emerald-300/50'
                                         : 'bg-slate-200 text-slate-400 border-slate-300/50 cursor-not-allowed'
                                 }`}
                             >
-                                <CheckCircle2 className="w-3 h-3" />
-                                {currentIdx + 1 >= TOTAL_LETTERS ? 'Selesai! 🎉' : 'Lanjut →'}
+                                <CheckCircle2 className="w-3 h-3 md:w-5 md:h-5 shrink-0" />
+                                <span className="truncate">{currentIdx + 1 >= TOTAL_LETTERS ? 'Selesai! 🎉' : 'Lanjut →'}</span>
                             </motion.button>
                         </div>
 
                         <AnimatePresence mode="wait">
                             {feedbackType === 'error' ? (
                                 <motion.div key="error"
-                                    initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                                    className="flex items-center justify-center gap-1 bg-red-50 text-red-600 border border-red-200 text-[10px] font-black py-1.5 rounded-full px-3 shadow-sm w-full">
+                                    initial={{ opacity: 0, scale: 0.9, y: 5 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: -5 }}
+                                    className="flex items-center justify-center gap-2 bg-rose-50 text-rose-600 border-2 md:border-4 border-rose-200 text-[10px] sm:text-xs md:text-sm font-black py-2 md:py-2.5 rounded-full px-4 shadow-sm w-full">
                                     {feedbackMsg}
                                 </motion.div>
                             ) : feedbackType === 'success' || showSuccess ? (
                                 <motion.div key="success"
-                                    initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                                    className="flex items-center justify-center gap-1 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] font-black py-1.5 rounded-full px-3 shadow-sm w-full">
+                                    initial={{ opacity: 0, scale: 0.9, y: 5 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: -5 }}
+                                    className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-600 border-2 md:border-4 border-emerald-200 text-[10px] sm:text-xs md:text-sm font-black py-2 md:py-2.5 rounded-full px-4 shadow-sm w-full">
                                     {feedbackMsg || '✅ Bagus! Lanjut!'}
                                 </motion.div>
                             ) : (
                                 <motion.div key="hint"
                                     initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                    className="flex items-center justify-center gap-1 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm border border-white/50 text-[10px] font-bold text-amber-700 w-full">
-                                    <Trophy className="w-3 h-3 text-amber-500" />
-                                    Ikuti panduan garisnya! ✏️
+                                    className="flex items-center justify-center gap-1.5 md:gap-2 bg-white/80 backdrop-blur-md px-3 md:px-4 py-2 md:py-2.5 rounded-full shadow-sm border md:border-2 border-white/50 text-[10px] sm:text-xs md:text-sm font-black text-amber-700 w-full">
+                                    <Trophy className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-amber-500" />
+                                    <span>Tebalkan garisnya! ✏️</span>
                                 </motion.div>
                             )}
                         </AnimatePresence>
                     </div>
                 )}
 
-                <div className="flex-1 flex flex-col items-center justify-center">
-                    <div className="relative w-full h-full rounded-[20px] overflow-hidden border-4 border-dashed border-indigo-200 bg-white shadow-md flex flex-col justify-center items-center">
-                        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10">
-                            <div className="bg-indigo-100 text-indigo-700 px-3 py-0.5 rounded-full text-[9px] font-extrabold border border-indigo-200 whitespace-nowrap">
-                                ✏️ Ikuti garis putus-putus
-                            </div>
-                        </div>
+                <div className="w-full md:w-[60%] flex-1 flex flex-col items-center justify-center min-h-[220px] sm:min-h-[280px] md:min-h-0 relative">
+                    <div className="mb-2 md:mb-3 bg-indigo-100 text-indigo-700 px-4 md:px-5 py-1 md:py-1.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black border-2 border-indigo-200 whitespace-nowrap shadow-sm z-20">
+                        ✏️ Ikuti garis putus-putus
+                    </div>
+
+                    <div className="relative w-full h-full rounded-[20px] md:rounded-[28px] overflow-hidden border-[4px] md:border-[6px] border-dashed border-indigo-200 bg-white shadow-xl flex flex-col justify-center items-center">
 
                         <canvas ref={canvasRef}
                             className="absolute inset-0 w-full h-full touch-none cursor-crosshair"
@@ -553,5 +553,6 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
                 </div>
             </div>
         </div>
+        </FullscreenWrapper>
     );
 }

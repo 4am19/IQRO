@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { router } from '@inertiajs/react';
 import { X, Heart, Trophy, RotateCcw, ArrowLeft, Volume2, Sparkles, SkipForward } from 'lucide-react';
 import axios from 'axios';
+import FullscreenWrapper from '@/Components/Organisms/FullscreenWrapper';
 
 interface Level { id: number; title: string; minimum_passing_score: number; }
 interface Student { id: number; name: string; }
@@ -170,6 +171,7 @@ export default function Tajwid({ level, student, nextLevel }: Props) {
     if (isFinished) {
         const stars = finalCalculatedScore >= 80 ? 3 : finalCalculatedScore >= 50 ? 2 : finalCalculatedScore > 0 ? 1 : 0;
         return (
+            <FullscreenWrapper>
             <div className="h-screen-safe overflow-auto bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center p-4 pt-8"
                 style={{ backgroundImage: "url('/images/background%20level.png')" }}>
                 <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
@@ -224,6 +226,7 @@ export default function Tajwid({ level, student, nextLevel }: Props) {
                     </div>
                 </motion.div>
             </div>
+            </FullscreenWrapper>
         );
     }
 
@@ -236,6 +239,7 @@ export default function Tajwid({ level, student, nextLevel }: Props) {
     ];
 
     return (
+        <FullscreenWrapper>
         <div className="h-screen-safe overflow-hidden bg-cover bg-center bg-no-repeat flex flex-col font-sans relative"
             style={{ backgroundImage: "url('/images/background%20level.png')" }}>
 
@@ -267,81 +271,82 @@ export default function Tajwid({ level, student, nextLevel }: Props) {
             </div>
 
             {/* Game Content */}
-            <div className="flex-1 min-h-0 flex flex-row items-center justify-center max-w-5xl mx-auto w-full px-3 gap-4 z-10">
+            <div className="flex-1 min-h-0 flex flex-col md:flex-row items-center justify-center max-w-6xl mx-auto w-full px-4 sm:px-8 gap-6 md:gap-12 z-10 py-6 md:py-0">
 
-                {/* Question Card — Left */}
-                <div className="w-[38%] flex flex-col items-center justify-center">
-                    <div className="mb-2">
-                        <div className="bg-purple-100 text-purple-700 px-4 py-1 rounded-full text-[10px] sm:text-xs font-black shadow-sm border border-purple-200 whitespace-nowrap">
-                            Soal Tajwid {currentIdx + 1} / {TOTAL}
-                        </div>
+                {/* Question Card — Top/Left */}
+                <div className="w-full md:w-[45%] flex flex-col items-center justify-center gap-3 md:gap-4 max-w-sm md:max-w-md mx-auto">
+                    <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-5 py-1.5 rounded-full text-xs sm:text-sm font-black shadow-lg border-2 border-white/50 whitespace-nowrap">
+                        ✨ Soal Tajwid {currentIdx + 1} / {TOTAL} ✨
                     </div>
                     <AnimatePresence mode="wait">
                         <motion.div key={currentIdx}
-                            initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 30 }}
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: -20 }}
                             transition={{ type: 'spring', damping: 22 }}
-                            className="bg-white/95 backdrop-blur-md border-[3px] border-white rounded-[20px] p-4 text-center shadow-xl relative w-full">
-                            <h2 className="text-sm sm:text-base lg:text-lg font-extrabold text-slate-800 leading-snug">
+                            className="bg-white/95 backdrop-blur-md border-4 border-white rounded-[28px] p-6 sm:p-8 text-center shadow-2xl relative w-full flex items-center justify-center min-h-[140px] md:min-h-[220px]">
+                            <h2 className="text-lg sm:text-xl md:text-2xl font-extrabold text-slate-800 leading-snug drop-shadow-sm">
                                 {currentQ.question}
                             </h2>
-                            <div className="absolute right-2 top-2 text-lg opacity-40">🌙</div>
+                            <div className="absolute right-3 top-3 text-2xl opacity-40">🌙</div>
                         </motion.div>
                     </AnimatePresence>
                 </div>
 
-                {/* Options — Right */}
-                <div className="w-[55%] flex flex-col gap-1.5 sm:gap-2">
+                {/* Options — Bottom/Right */}
+                <div className="w-full md:w-[50%] flex flex-col gap-3 md:gap-4 max-w-md md:max-w-xl mx-auto">
                     {/* Feedback bar (inline, above options when answered) */}
                     <AnimatePresence mode="wait">
                         {feedback && (
                             <motion.div key={feedback}
                                 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-                                className={`w-full py-2 px-3 rounded-2xl text-center font-black text-xs sm:text-sm border-2 shadow-md
+                                className={`w-full py-3 px-4 rounded-2xl text-center font-black text-sm md:text-base border-4 shadow-md
                                     ${feedback === 'correct' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-amber-50 border-amber-300 text-amber-700'}`}>
                                 {feedback === 'correct' ? '🎉 Wah, benar sekali!' : '💡 Yuk pelajari!'}
-                                <p className="text-[10px] sm:text-xs font-bold text-slate-600 mt-0.5">{currentQ.explanation}</p>
+                                <p className="text-xs md:text-sm font-bold text-slate-600 mt-1">{currentQ.explanation}</p>
                             </motion.div>
                         )}
                     </AnimatePresence>
 
-                    {currentQ.options.map((opt: any, idx: number) => {
-                        const theme = OPTION_THEMES[idx % OPTION_THEMES.length];
-                        let isWrong = feedback === 'wrong' && !opt.isCorrect;
-                        let isCorrect = feedback === 'correct' && opt.isCorrect;
+                    <div className="flex flex-col gap-2 md:gap-3">
+                        {currentQ.options.map((opt: any, idx: number) => {
+                            const theme = OPTION_THEMES[idx % OPTION_THEMES.length];
+                            let isWrong = feedback === 'wrong' && !opt.isCorrect;
+                            let isCorrect = feedback === 'correct' && opt.isCorrect;
 
-                        return (
-                            <motion.button key={idx} disabled={!!feedback}
-                                animate={isCorrect ? { scale: [1, 1.03, 1] } : isWrong ? { x: [-4, 4, -4, 4, 0] } : {}}
-                                transition={isCorrect ? { duration: 0.6, repeat: 2 } : { duration: 0.35 }}
-                                whileHover={!feedback ? { scale: 1.01 } : {}}
-                                whileTap={!feedback ? { scale: 0.97 } : {}}
-                                onClick={() => handleAnswer(opt.isCorrect)}
-                                className={`relative flex items-center w-full text-left px-3 py-2 sm:py-2.5 rounded-2xl font-black text-xs sm:text-sm transition-all shadow-sm border-2
-                                    ${!feedback ? `${theme.bg} ${theme.text} ${theme.border} hover:shadow-md hover:brightness-105` : ''}
-                                    ${isCorrect ? 'bg-emerald-100 border-emerald-400 text-emerald-800 shadow-[0_0_20px_rgba(52,211,153,0.4)] ring-2 ring-emerald-300' : ''}
-                                    ${isWrong ? 'bg-slate-100 border-slate-200 text-slate-400 opacity-60' : ''}
-                                    ${feedback && !isCorrect && !isWrong ? `${theme.bg} ${theme.text} border-transparent opacity-40` : ''}
-                                `}>
-                                <span className="leading-tight flex-1 text-center">{opt.text}</span>
-                                {isCorrect && (
-                                    <motion.div animate={{ rotate: [0, 15, -15, 0] }} transition={{ duration: 0.5, repeat: Infinity }}>
-                                        <Sparkles className="w-4 h-4 text-amber-400" />
-                                    </motion.div>
-                                )}
-                            </motion.button>
-                        );
-                    })}
+                            return (
+                                <motion.button key={idx} disabled={!!feedback}
+                                    animate={isCorrect ? { scale: [1, 1.03, 1] } : isWrong ? { x: [-4, 4, -4, 4, 0] } : {}}
+                                    transition={isCorrect ? { duration: 0.6, repeat: 2 } : { duration: 0.35 }}
+                                    whileHover={!feedback ? { scale: 1.02, x: 5 } : {}}
+                                    whileTap={!feedback ? { scale: 0.98 } : {}}
+                                    onClick={() => handleAnswer(opt.isCorrect)}
+                                    className={`relative flex items-center w-full text-left px-4 py-3 sm:py-4 rounded-2xl font-black transition-all shadow-sm border-4
+                                        ${!feedback ? `${theme.bg} ${theme.text} ${theme.border} hover:shadow-lg hover:brightness-105` : ''}
+                                        ${isCorrect ? 'bg-emerald-100 border-emerald-400 text-emerald-800 shadow-[0_0_20px_rgba(52,211,153,0.4)] ring-4 ring-emerald-300/30' : ''}
+                                        ${isWrong ? 'bg-slate-100 border-slate-200 text-slate-400 opacity-60' : ''}
+                                        ${feedback && !isCorrect && !isWrong ? `${theme.bg} ${theme.text} border-transparent opacity-40` : ''}
+                                    `}>
+                                    <span className="leading-tight flex-1 text-sm md:text-lg">{opt.text}</span>
+                                    {isCorrect && (
+                                        <motion.div className="bg-white rounded-full p-1 shadow-sm ml-2" animate={{ rotate: [0, 15, -15, 0] }} transition={{ duration: 0.5, repeat: Infinity }}>
+                                            <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-amber-400" />
+                                        </motion.div>
+                                    )}
+                                </motion.button>
+                            );
+                        })}
+                    </div>
 
                     {/* Hint when no feedback */}
                     {!feedback && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                            className="flex items-center justify-center gap-1.5 bg-white/80 backdrop-blur-md px-4 py-1.5 rounded-full mx-auto shadow-sm border border-white/50 mt-1">
-                            <span className="text-amber-500 text-xs">⭐</span>
-                            <span className="text-[10px] sm:text-xs font-bold text-indigo-900">Yuk, pilih jawaban yang benar!</span>
+                            className="flex items-center justify-center gap-2 bg-white/80 backdrop-blur-md px-5 py-2 rounded-full mx-auto shadow-sm border border-white/50 mt-2">
+                            <span className="text-amber-500 text-sm md:text-base">⭐</span>
+                            <span className="text-xs md:text-sm font-extrabold text-indigo-900">Yuk, pilih jawaban yang benar!</span>
                         </motion.div>
                     )}
                 </div>
             </div>
         </div>
+        </FullscreenWrapper>
     );
 }

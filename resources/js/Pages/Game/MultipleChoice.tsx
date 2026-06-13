@@ -6,6 +6,7 @@ import { useAudioPlayer } from '@/Hooks/useAudioPlayer';
 import { Heart, Volume2, X, RotateCcw, ArrowLeft, SkipForward, Sparkles } from 'lucide-react';
 import MascotHufi from '@/Components/MascotHufi';
 import axios from 'axios';
+import FullscreenWrapper from '@/Components/Organisms/FullscreenWrapper';
 
 interface Level { id: number; title: string; minimum_passing_score: number; }
 interface Student { id: number; name: string; }
@@ -158,6 +159,7 @@ export default function MultipleChoice({ letters, level, student, nextLevel }: P
     ];
 
     return (
+        <FullscreenWrapper>
         <div className="h-screen-safe overflow-hidden bg-cover bg-center bg-no-repeat flex flex-col font-sans relative"
             style={{ backgroundImage: "url('/images/background%20level.png')" }}>
 
@@ -275,5 +277,6 @@ export default function MultipleChoice({ letters, level, student, nextLevel }: P
                 </div>
             </div>
         </div>
+        </FullscreenWrapper>
     );
 }
