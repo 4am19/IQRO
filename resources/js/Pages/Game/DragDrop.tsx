@@ -44,18 +44,18 @@ function DraggableLetter({ id, char, isPlaced, borderClass }: { id: string; char
     if (isPlaced) return <div className="w-14 h-14 md:w-20 md:h-20 opacity-0 rounded-2xl" />;
     return (
         <div ref={setNodeRef} {...listeners} {...attributes}
-            className={`w-14 h-14 md:w-20 md:h-20 flex items-center justify-center bg-white border-4 ${borderClass || 'border-indigo-200'} rounded-2xl md:rounded-3xl font-arabic text-3xl md:text-5xl cursor-grab active:cursor-grabbing transition-all touch-none shadow-md hover:shadow-xl hover:-translate-y-1 hover:scale-105 ${isDragging ? 'opacity-30' : ''}`}>
+            className={`w-14 h-14 md:w-20 md:h-20 flex items-center justify-center bg-white border-4 ${borderClass || 'border-indigo-200'} rounded-2xl md:rounded-3xl font-arabic text-3xl md:text-5xl cursor-grab active:cursor-grabbing transition-all touch-none shadow-md hover:shadow-xl hover:-translate-y-1 hover:scale-105 ${isDragging ? 'opacity-30' : ''} [@media(max-height:500px)]:w-14 [@media(max-height:500px)]:h-14 [@media(max-height:500px)]:text-3xl`}>
             {char}
         </div>
     );
 }
 
-function DroppableSlot({ id, char }: { id: string; char?: string }) {
+function DroppableSlot({ id, char, onRemove }: { id: string; char?: string; onRemove?: () => void }) {
     const { isOver, setNodeRef } = useDroppable({ id });
     return (
-        <div ref={setNodeRef}
-            className={`w-14 h-14 md:w-20 md:h-20 flex items-center justify-center rounded-2xl md:rounded-3xl border-[3px] md:border-4 transition-all ${
-                char ? 'bg-indigo-50 border-indigo-400 text-3xl md:text-5xl font-arabic shadow-sm text-indigo-900'
+        <div ref={setNodeRef} onClick={char && onRemove ? onRemove : undefined}
+            className={`w-14 h-14 md:w-20 md:h-20 flex items-center justify-center rounded-2xl md:rounded-3xl border-[3px] md:border-4 transition-all [@media(max-height:500px)]:w-14 [@media(max-height:500px)]:h-14 ${
+                char ? 'bg-indigo-50 border-indigo-400 text-3xl md:text-5xl font-arabic shadow-sm text-indigo-900 [@media(max-height:500px)]:text-3xl cursor-pointer hover:bg-rose-50 hover:border-rose-400 hover:text-rose-600'
                 : isOver ? 'bg-indigo-50 border-indigo-300 border-dashed scale-105'
                 : 'bg-white border-dashed border-slate-300 shadow-inner'
             }`}>
@@ -101,8 +101,33 @@ export default function DragDrop({ letters, level, student, nextLevel }: DragDro
         const droppedChar = shuffledLetters.find(l => l.id === active.id)?.char;
         const slotIdx = parseInt(over.id as string);
         if (!droppedChar || isNaN(slotIdx)) return;
+        
+        const oldLetterId = Object.keys(placedMap).find(key => placedMap[key] === over.id);
+
         setSlots(prev => { const next = [...prev]; next[slotIdx] = droppedChar; return next; });
-        setPlacedMap(prev => ({ ...prev, [active.id as string]: over.id as string }));
+        setPlacedMap(prev => { 
+            const next = { ...prev }; 
+            if (oldLetterId) delete next[oldLetterId];
+            next[active.id as string] = over.id as string; 
+            return next; 
+        });
+    };
+
+    const handleRemoveSlot = (slotIdx: number) => {
+        if (slots[slotIdx] === null) return;
+        const letterId = Object.keys(placedMap).find(key => placedMap[key] === String(slotIdx));
+        setSlots(prev => {
+            const next = [...prev];
+            next[slotIdx] = null;
+            return next;
+        });
+        if (letterId) {
+            setPlacedMap(prev => {
+                const next = { ...prev };
+                delete next[letterId];
+                return next;
+            });
+        }
     };
 
     const checkAnswer = () => {
@@ -219,18 +244,18 @@ export default function DragDrop({ letters, level, student, nextLevel }: DragDro
             </div>
 
             {/* Game Content */}
-            <div className="flex-1 min-h-0 flex flex-col md:flex-row items-center justify-center max-w-6xl mx-auto w-full px-4 sm:px-8 gap-6 md:gap-12 z-10 py-6 md:py-0">
+            <div className="flex-1 min-h-0 flex flex-col md:flex-row items-center justify-center max-w-6xl mx-auto w-full px-4 sm:px-8 gap-6 md:gap-12 z-10 py-6 md:py-0 [@media(max-height:500px)]:py-2 [@media(max-height:500px)]:gap-4">
 
                 {/* Word Target Card — Top/Left */}
-                <div className="w-full md:w-[40%] flex flex-col items-center justify-center gap-3 md:gap-4 max-w-sm md:max-w-md mx-auto">
-                    <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-5 py-1.5 rounded-full text-xs sm:text-sm font-black shadow-lg border-2 border-white/50 whitespace-nowrap">
+                <div className="w-full md:w-[40%] flex flex-col items-center justify-center gap-3 md:gap-4 max-w-sm md:max-w-md mx-auto [@media(max-height:500px)]:gap-2">
+                    <div className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-5 py-1.5 rounded-full text-xs sm:text-sm font-black shadow-lg border-2 border-white/50 whitespace-nowrap [@media(max-height:500px)]:py-1 [@media(max-height:500px)]:text-[10px]">
                         ✨ Susun huruf untuk membentuk kata ✨
                     </div>
 
-                    <div className="bg-white/95 backdrop-blur-md border-4 border-white rounded-[28px] p-5 sm:p-8 text-center shadow-2xl relative w-full flex flex-col items-center">
-                        <div className="text-6xl md:text-8xl font-arabic font-black text-indigo-900 mb-3 md:mb-5 drop-shadow-sm leading-tight">{currentWord?.word}</div>
-                        <div className="flex items-center justify-center gap-3 bg-indigo-50 px-4 md:px-6 py-2 md:py-3 rounded-full border border-indigo-100 shadow-sm w-full mt-2">
-                            <p className="text-indigo-700 font-black text-sm md:text-base flex-1 text-center">"{currentWord?.meaning}"</p>
+                    <div className="bg-white/95 backdrop-blur-md border-4 border-white rounded-[28px] p-5 sm:p-8 text-center shadow-2xl relative w-full flex flex-col items-center [@media(max-height:500px)]:p-4 [@media(max-height:500px)]:rounded-2xl">
+                        <div className="text-6xl md:text-8xl font-arabic font-black text-indigo-900 mb-3 md:mb-5 drop-shadow-sm leading-tight [@media(max-height:500px)]:text-4xl [@media(max-height:500px)]:mb-2">{currentWord?.word}</div>
+                        <div className="flex items-center justify-center gap-3 bg-indigo-50 px-4 md:px-6 py-2 md:py-3 rounded-full border border-indigo-100 shadow-sm w-full mt-2 [@media(max-height:500px)]:py-1.5">
+                            <p className="text-indigo-700 font-black text-sm md:text-base flex-1 text-center [@media(max-height:500px)]:text-xs">"{currentWord?.meaning}"</p>
                             <button onClick={() => playAudio(currentWord?.word ?? '')}
                                 className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-2 md:p-2.5 rounded-full hover:from-indigo-600 hover:to-purple-600 transition-colors active:scale-90 shadow-md">
                                 <Volume2 className="w-4 h-4 md:w-5 md:h-5" />
@@ -243,15 +268,15 @@ export default function DragDrop({ letters, level, student, nextLevel }: DragDro
                 <div className="w-full md:w-[50%] flex flex-col gap-4 md:gap-6 max-w-md md:max-w-xl mx-auto">
                     <DndContext sensors={sensors} onDragStart={({ active }) => setActiveId(active.id as string)} onDragEnd={handleDragEnd}>
                         {/* Drop Slots */}
-                        <div className="bg-white/80 backdrop-blur-md border-4 border-dashed border-indigo-200 rounded-[28px] p-4 sm:p-6 md:p-8 flex flex-row-reverse justify-center gap-3 md:gap-5 shadow-inner min-h-[100px] md:min-h-[140px] items-center">
+                        <div className="bg-white/80 backdrop-blur-md border-4 border-dashed border-indigo-200 rounded-[28px] p-4 sm:p-6 md:p-8 flex flex-row-reverse justify-center gap-3 md:gap-5 shadow-inner min-h-[100px] md:min-h-[140px] items-center [@media(max-height:500px)]:p-3 [@media(max-height:500px)]:min-h-[80px] [@media(max-height:500px)]:rounded-xl">
                             {slots.map((char, idx) => (
-                                <DroppableSlot key={idx} id={String(idx)} char={char ?? undefined} />
+                                <DroppableSlot key={idx} id={String(idx)} char={char ?? undefined} onRemove={() => handleRemoveSlot(idx)} />
                             ))}
                         </div>
 
                         {/* Draggable Letters */}
-                        <div className="bg-white/95 backdrop-blur-md border-4 border-white rounded-[28px] p-5 sm:p-6 md:p-8 shadow-2xl relative">
-                            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-indigo-50 text-indigo-700 px-5 py-1.5 rounded-full text-xs md:text-sm font-black border-2 border-indigo-200 whitespace-nowrap shadow-sm">
+                        <div className="bg-white/95 backdrop-blur-md border-4 border-white rounded-[28px] p-5 sm:p-6 md:p-8 shadow-2xl relative [@media(max-height:500px)]:p-4 [@media(max-height:500px)]:rounded-xl">
+                            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-indigo-50 text-indigo-700 px-5 py-1.5 rounded-full text-xs md:text-sm font-black border-2 border-indigo-200 whitespace-nowrap shadow-sm [@media(max-height:500px)]:py-1 [@media(max-height:500px)]:text-[10px]">
                                 Seret huruf ke kotak di atas 👆
                             </div>
                             <div className="flex flex-wrap justify-center gap-3 md:gap-5 pt-3">
@@ -273,7 +298,7 @@ export default function DragDrop({ letters, level, student, nextLevel }: DragDro
                                 const idx = shuffledLetters.findIndex(l => l.id === activeId);
                                 const borderClass = BORDER_COLORS[idx % BORDER_COLORS.length] || BORDER_COLORS[0];
                                 return (
-                                    <div className={`w-14 h-14 md:w-20 md:h-20 flex items-center justify-center bg-white border-4 ${borderClass} rounded-2xl md:rounded-3xl font-arabic text-3xl md:text-5xl shadow-2xl scale-110`}>
+                                    <div className={`w-14 h-14 md:w-20 md:h-20 flex items-center justify-center bg-white border-4 ${borderClass} rounded-2xl md:rounded-3xl font-arabic text-3xl md:text-5xl shadow-2xl scale-110 [@media(max-height:500px)]:w-14 [@media(max-height:500px)]:h-14 [@media(max-height:500px)]:text-3xl`}>
                                         {letter?.char}
                                     </div>
                                 );
@@ -285,7 +310,7 @@ export default function DragDrop({ letters, level, student, nextLevel }: DragDro
                     <div className="mt-1 md:mt-2">
                         {!feedback ? (
                             <button onClick={checkAnswer} disabled={slots.some(s => s === null)}
-                                className="w-full bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white font-black text-sm md:text-lg py-3 md:py-4 rounded-full shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 border-[3px] border-emerald-300/50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                className="w-full bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white font-black text-sm md:text-lg py-3 md:py-4 rounded-full shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 border-[3px] border-emerald-300/50 disabled:opacity-50 disabled:cursor-not-allowed [@media(max-height:500px)]:py-2">
                                 <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6" /> Cek Jawaban
                             </button>
                         ) : (

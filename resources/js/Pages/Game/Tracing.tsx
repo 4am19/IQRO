@@ -477,14 +477,14 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
                 </div>
             </div>
 
-            <div className="flex-1 min-h-0 flex flex-col md:flex-row items-center md:items-stretch max-w-6xl mx-auto w-full px-3 sm:px-8 gap-3 sm:gap-4 md:gap-10 z-10 pb-3 md:pb-6 pt-1">
+            <div className="flex-1 min-h-0 flex flex-col md:flex-row items-center md:items-stretch max-w-6xl mx-auto w-full px-3 sm:px-8 gap-3 sm:gap-4 md:gap-10 z-10 pb-3 md:pb-6 pt-1 [@media(max-height:500px)]:gap-4 [@media(max-height:500px)]:pb-2">
 
                 {currentLetter && (
-                    <div className="w-full md:w-[35%] flex flex-col items-center justify-center gap-2 md:gap-4 max-w-sm md:max-w-md mx-auto">
-                        <div className="bg-white/95 backdrop-blur-md border-4 border-white rounded-[24px] md:rounded-[28px] p-4 sm:p-5 md:p-8 text-center shadow-2xl relative w-full flex flex-col items-center">
-                            <div className="text-5xl sm:text-6xl md:text-8xl font-arabic font-black text-indigo-900 mb-2 md:mb-3 leading-none drop-shadow-sm">{currentLetter.char_arabic}</div>
-                            <div className="flex items-center justify-center gap-2 md:gap-3 bg-indigo-50 px-3 md:px-6 py-2 md:py-3 rounded-full border border-indigo-100 shadow-sm w-full mt-1 md:mt-2">
-                                <p className="text-indigo-700 font-black text-[10px] sm:text-xs md:text-base flex-1 text-center whitespace-nowrap">"{currentLetter.name}" — "{currentLetter.read_latin}"</p>
+                    <div className="w-full md:w-[35%] flex flex-col items-center justify-center gap-2 md:gap-4 max-w-sm md:max-w-md mx-auto [@media(max-height:500px)]:gap-2">
+                        <div className="bg-white/95 backdrop-blur-md border-4 border-white rounded-[24px] md:rounded-[28px] p-4 sm:p-5 md:p-8 text-center shadow-2xl relative w-full flex flex-col items-center [@media(max-height:500px)]:p-3 [@media(max-height:500px)]:rounded-2xl">
+                            <div className="text-5xl sm:text-6xl md:text-8xl font-arabic font-black text-indigo-900 mb-2 md:mb-3 leading-none drop-shadow-sm [@media(max-height:500px)]:text-4xl [@media(max-height:500px)]:mb-1">{currentLetter.char_arabic}</div>
+                            <div className="flex items-center justify-center gap-2 md:gap-3 bg-indigo-50 px-3 md:px-6 py-2 md:py-3 rounded-full border border-indigo-100 shadow-sm w-full mt-1 md:mt-2 [@media(max-height:500px)]:py-1.5 [@media(max-height:500px)]:px-3">
+                                <p className="text-indigo-700 font-black text-[10px] sm:text-xs md:text-base flex-1 text-center whitespace-nowrap [@media(max-height:500px)]:text-[10px]">"{currentLetter.name}" — "{currentLetter.read_latin}"</p>
                                 <button onClick={() => playAudio(currentLetter.char_arabic, currentLetter.char_arabic)}
                                     className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-1.5 md:p-2.5 rounded-full hover:from-indigo-600 hover:to-purple-600 transition-colors active:scale-90 shadow-md">
                                     <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
@@ -494,14 +494,14 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
 
                         <div className="flex gap-2 w-full mt-1">
                             <button onClick={clearCanvas}
-                                className="flex-1 flex items-center justify-center gap-1 md:gap-2 bg-white border-2 md:border-4 border-slate-200 text-slate-600 px-2 sm:px-4 py-2 sm:py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] sm:text-sm md:text-lg transition-all active:scale-95 shadow-md hover:bg-slate-50">
+                                className="flex-1 flex items-center justify-center gap-1 md:gap-2 bg-white border-2 md:border-4 border-slate-200 text-slate-600 px-2 sm:px-4 py-2 sm:py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] sm:text-sm md:text-lg transition-all active:scale-95 shadow-md hover:bg-slate-50 [@media(max-height:500px)]:py-2 [@media(max-height:500px)]:text-[10px] [@media(max-height:500px)]:border-2 [@media(max-height:500px)]:rounded-xl">
                                 <Eraser className="w-3 h-3 md:w-5 md:h-5" /> Hapus
                             </button>
                             <motion.button
                                 onClick={handleNext}
                                 animate={shakeButton ? { x: [-8, 8, -6, 6, -3, 3, 0] } : {}}
                                 transition={{ duration: 0.4 }}
-                                className={`flex-[1.5] px-2 sm:px-4 py-2 sm:py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] sm:text-sm md:text-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-1 md:gap-2 border-2 md:border-4 ${
+                                className={`flex-[1.5] px-2 sm:px-4 py-2 sm:py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] sm:text-sm md:text-lg shadow-lg transition-all active:scale-95 flex items-center justify-center gap-1 md:gap-2 border-2 md:border-4 [@media(max-height:500px)]:py-2 [@media(max-height:500px)]:text-[10px] [@media(max-height:500px)]:border-2 [@media(max-height:500px)]:rounded-xl ${
                                     hasDrawn
                                         ? 'bg-gradient-to-r from-emerald-400 to-green-500 text-white hover:from-emerald-500 hover:to-green-600 border-emerald-300/50'
                                         : 'bg-slate-200 text-slate-400 border-slate-300/50 cursor-not-allowed'
@@ -537,8 +537,8 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
                     </div>
                 )}
 
-                <div className="w-full md:w-[60%] flex-1 flex flex-col items-center justify-center min-h-[220px] sm:min-h-[280px] md:min-h-0 relative">
-                    <div className="mb-2 md:mb-3 bg-indigo-100 text-indigo-700 px-4 md:px-5 py-1 md:py-1.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black border-2 border-indigo-200 whitespace-nowrap shadow-sm z-20">
+                <div className="w-full md:w-[60%] flex-1 flex flex-col items-center justify-center min-h-[220px] sm:min-h-[280px] md:min-h-0 relative [@media(max-height:500px)]:min-h-[140px]">
+                    <div className="mb-2 md:mb-3 bg-indigo-100 text-indigo-700 px-4 md:px-5 py-1 md:py-1.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black border-2 border-indigo-200 whitespace-nowrap shadow-sm z-20 [@media(max-height:500px)]:py-1 [@media(max-height:500px)]:mb-1 [@media(max-height:500px)]:text-[10px]">
                         ✏️ Ikuti garis putus-putus
                     </div>
 

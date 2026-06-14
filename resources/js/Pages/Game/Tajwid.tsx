@@ -271,28 +271,28 @@ export default function Tajwid({ level, student, nextLevel }: Props) {
             </div>
 
             {/* Game Content */}
-            <div className="flex-1 min-h-0 flex flex-col md:flex-row items-center justify-center max-w-6xl mx-auto w-full px-4 sm:px-8 gap-6 md:gap-12 z-10 py-6 md:py-0">
+            <div className="flex-1 min-h-0 flex flex-col md:flex-row items-center justify-center max-w-6xl mx-auto w-full px-4 sm:px-8 gap-6 md:gap-12 z-10 py-6 md:py-0 [@media(max-height:500px)]:py-2 [@media(max-height:500px)]:gap-4">
 
                 {/* Question Card — Top/Left */}
-                <div className="w-full md:w-[45%] flex flex-col items-center justify-center gap-3 md:gap-4 max-w-sm md:max-w-md mx-auto">
-                    <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-5 py-1.5 rounded-full text-xs sm:text-sm font-black shadow-lg border-2 border-white/50 whitespace-nowrap">
+                <div className="w-full md:w-[45%] flex flex-col items-center justify-center gap-3 md:gap-4 max-w-sm md:max-w-md mx-auto [@media(max-height:500px)]:gap-2">
+                    <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-5 py-1.5 rounded-full text-xs sm:text-sm font-black shadow-lg border-2 border-white/50 whitespace-nowrap [@media(max-height:500px)]:py-1 [@media(max-height:500px)]:text-[10px]">
                         ✨ Soal Tajwid {currentIdx + 1} / {TOTAL} ✨
                     </div>
                     <AnimatePresence mode="wait">
                         <motion.div key={currentIdx}
                             initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: -20 }}
                             transition={{ type: 'spring', damping: 22 }}
-                            className="bg-white/95 backdrop-blur-md border-4 border-white rounded-[28px] p-6 sm:p-8 text-center shadow-2xl relative w-full flex items-center justify-center min-h-[140px] md:min-h-[220px]">
-                            <h2 className="text-lg sm:text-xl md:text-2xl font-extrabold text-slate-800 leading-snug drop-shadow-sm">
+                            className="bg-white/95 backdrop-blur-md border-4 border-white rounded-[28px] p-6 sm:p-8 text-center shadow-2xl relative w-full flex items-center justify-center min-h-[140px] md:min-h-[220px] [@media(max-height:500px)]:min-h-[100px] [@media(max-height:500px)]:p-4 [@media(max-height:500px)]:rounded-2xl">
+                            <h2 className="text-lg sm:text-xl md:text-2xl font-extrabold text-slate-800 leading-snug drop-shadow-sm [@media(max-height:500px)]:text-base">
                                 {currentQ.question}
                             </h2>
-                            <div className="absolute right-3 top-3 text-2xl opacity-40">🌙</div>
+                            <div className="absolute right-3 top-3 text-2xl opacity-40 [@media(max-height:500px)]:text-lg">🌙</div>
                         </motion.div>
                     </AnimatePresence>
                 </div>
 
                 {/* Options — Bottom/Right */}
-                <div className="w-full md:w-[50%] flex flex-col gap-3 md:gap-4 max-w-md md:max-w-xl mx-auto">
+                <div className="w-full md:w-[50%] flex flex-col gap-3 md:gap-4 max-w-md md:max-w-xl mx-auto [@media(max-height:500px)]:gap-1.5 [@media(max-height:500px)]:overflow-y-auto [@media(max-height:500px)]:max-h-[85vh] [@media(max-height:500px)]:pr-2">
                     {/* Feedback bar (inline, above options when answered) */}
                     <AnimatePresence mode="wait">
                         {feedback && (
@@ -306,7 +306,7 @@ export default function Tajwid({ level, student, nextLevel }: Props) {
                         )}
                     </AnimatePresence>
 
-                    <div className="flex flex-col gap-2 md:gap-3">
+                    <div className="flex flex-col [@media(max-height:500px)]:grid [@media(max-height:500px)]:grid-cols-2 gap-2 md:gap-3">
                         {currentQ.options.map((opt: any, idx: number) => {
                             const theme = OPTION_THEMES[idx % OPTION_THEMES.length];
                             let isWrong = feedback === 'wrong' && !opt.isCorrect;
@@ -319,13 +319,13 @@ export default function Tajwid({ level, student, nextLevel }: Props) {
                                     whileHover={!feedback ? { scale: 1.02, x: 5 } : {}}
                                     whileTap={!feedback ? { scale: 0.98 } : {}}
                                     onClick={() => handleAnswer(opt.isCorrect)}
-                                    className={`relative flex items-center w-full text-left px-4 py-3 sm:py-4 rounded-2xl font-black transition-all shadow-sm border-4
+                                    className={`relative flex items-center w-full text-left px-4 py-3 sm:py-4 rounded-2xl font-black transition-all shadow-sm border-4 [@media(max-height:500px)]:py-3 [@media(max-height:500px)]:border-2 [@media(max-height:500px)]:rounded-xl
                                         ${!feedback ? `${theme.bg} ${theme.text} ${theme.border} hover:shadow-lg hover:brightness-105` : ''}
                                         ${isCorrect ? 'bg-emerald-100 border-emerald-400 text-emerald-800 shadow-[0_0_20px_rgba(52,211,153,0.4)] ring-4 ring-emerald-300/30' : ''}
                                         ${isWrong ? 'bg-slate-100 border-slate-200 text-slate-400 opacity-60' : ''}
                                         ${feedback && !isCorrect && !isWrong ? `${theme.bg} ${theme.text} border-transparent opacity-40` : ''}
                                     `}>
-                                    <span className="leading-tight flex-1 text-sm md:text-lg">{opt.text}</span>
+                                    <span className="leading-tight flex-1 text-sm md:text-lg [@media(max-height:500px)]:text-sm">{opt.text}</span>
                                     {isCorrect && (
                                         <motion.div className="bg-white rounded-full p-1 shadow-sm ml-2" animate={{ rotate: [0, 15, -15, 0] }} transition={{ duration: 0.5, repeat: Infinity }}>
                                             <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-amber-400" />
@@ -339,7 +339,7 @@ export default function Tajwid({ level, student, nextLevel }: Props) {
                     {/* Hint when no feedback */}
                     {!feedback && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                            className="flex items-center justify-center gap-2 bg-white/80 backdrop-blur-md px-5 py-2 rounded-full mx-auto shadow-sm border border-white/50 mt-2">
+                            className="flex items-center justify-center gap-2 bg-white/80 backdrop-blur-md px-5 py-2 rounded-full mx-auto shadow-sm border border-white/50 mt-2 [@media(max-height:500px)]:py-1 [@media(max-height:500px)]:mt-1">
                             <span className="text-amber-500 text-sm md:text-base">⭐</span>
                             <span className="text-xs md:text-sm font-extrabold text-indigo-900">Yuk, pilih jawaban yang benar!</span>
                         </motion.div>
