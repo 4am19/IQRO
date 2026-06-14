@@ -9,6 +9,7 @@ import {
 import { Trophy, RotateCcw, ArrowLeft, CheckCircle2, Volume2, X, Sparkles, SkipForward } from 'lucide-react';
 import axios from 'axios';
 import FullscreenWrapper from '@/Components/Organisms/FullscreenWrapper';
+import FeedbackModal from '@/Components/Organisms/FeedbackModal';
 
 interface Letter { id: number; char_arabic: string; name: string; read_latin: string; }
 interface Level { id: number; title: string; minimum_passing_score: number; }
@@ -41,7 +42,7 @@ function ConfettiParticles() {
 
 function DraggableLetter({ id, char, isPlaced, borderClass }: { id: string; char: string; isPlaced: boolean; borderClass?: string }) {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
-    if (isPlaced) return <div className="w-14 h-14 md:w-20 md:h-20 opacity-0 rounded-2xl" />;
+    if (isPlaced) return <div className="w-14 h-14 md:w-20 md:h-20 opacity-0 rounded-2xl [@media(max-height:500px)]:w-14 [@media(max-height:500px)]:h-14" />;
     return (
         <div ref={setNodeRef} {...listeners} {...attributes}
             className={`w-14 h-14 md:w-20 md:h-20 flex items-center justify-center bg-white border-4 ${borderClass || 'border-indigo-200'} rounded-2xl md:rounded-3xl font-arabic text-3xl md:text-5xl cursor-grab active:cursor-grabbing transition-all touch-none shadow-md hover:shadow-xl hover:-translate-y-1 hover:scale-105 ${isDragging ? 'opacity-30' : ''} [@media(max-height:500px)]:w-14 [@media(max-height:500px)]:h-14 [@media(max-height:500px)]:text-3xl`}>
@@ -156,7 +157,7 @@ export default function DragDrop({ letters, level, student, nextLevel }: DragDro
             } else {
                 setCurrentWordIdx(prev => prev + 1);
             }
-        }, 1500);
+        }, 2500);
     };
 
     const restart = () => { setCurrentWordIdx(0); setScore(0); setIsFinished(false); setWrongAnswers([]); startTime.current = Date.now(); };
@@ -308,24 +309,17 @@ export default function DragDrop({ letters, level, student, nextLevel }: DragDro
 
                     {/* Check / Feedback */}
                     <div className="mt-1 md:mt-2">
-                        {!feedback ? (
+                        {!feedback && (
                             <button onClick={checkAnswer} disabled={slots.some(s => s === null)}
                                 className="w-full bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white font-black text-sm md:text-lg py-3 md:py-4 rounded-full shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 border-[3px] border-emerald-300/50 disabled:opacity-50 disabled:cursor-not-allowed [@media(max-height:500px)]:py-2">
                                 <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6" /> Cek Jawaban
                             </button>
-                        ) : (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                                className={`w-full flex items-center justify-center gap-2 text-sm md:text-base font-black py-3 md:py-4 rounded-full shadow-md border-4
-                                    ${feedback === 'correct' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-amber-50 border-amber-300 text-amber-700'}`}>
-                                {feedback === 'correct' ? (
-                                    <><Sparkles className="w-5 h-5 md:w-6 md:h-6 text-amber-400" /> Benar! Keren sekali!</>
-                                ) : '💡 Hmm, susunannya belum pas. Coba lagi yuk!'}
-                            </motion.div>
                         )}
                     </div>
                 </div>
             </div>
+
+            <FeedbackModal feedback={feedback} />
         </div>
         </FullscreenWrapper>
     );

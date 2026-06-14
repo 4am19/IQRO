@@ -5,6 +5,7 @@ import { useGameEngine, LetterWithHarakat } from '@/Hooks/useGameEngine';
 import { useAudioPlayer } from '@/Hooks/useAudioPlayer';
 import { Heart, Volume2, X, RotateCcw, ArrowLeft, SkipForward, Sparkles } from 'lucide-react';
 import MascotHufi from '@/Components/MascotHufi';
+import FeedbackModal from '@/Components/Organisms/FeedbackModal';
 import axios from 'axios';
 import FullscreenWrapper from '@/Components/Organisms/FullscreenWrapper';
 
@@ -235,18 +236,6 @@ export default function MultipleChoice({ letters, level, student, nextLevel }: P
 
                 {/* Options — Right */}
                 <div className="w-[55%] flex flex-col gap-2">
-                    {/* Feedback bar */}
-                    <AnimatePresence mode="wait">
-                        {feedback && (
-                            <motion.div key={feedback}
-                                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-                                className={`w-full py-2 px-3 rounded-2xl text-center font-black text-xs sm:text-sm border-2 shadow-md
-                                    ${feedback === 'correct' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-amber-50 border-amber-300 text-amber-700'}`}>
-                                {feedback === 'correct' ? '🎉 Wah, kamu hebat sekali!' : '💡 Hmm, hampir benar!'}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
                     <div className="grid grid-cols-2 gap-2">
                         {currentQuestion!.options.map((opt, idx) => {
                             const style = OPTION_COLORS[idx % OPTION_COLORS.length];
@@ -288,6 +277,8 @@ export default function MultipleChoice({ letters, level, student, nextLevel }: P
                     )}
                 </div>
             </div>
+
+            <FeedbackModal feedback={feedback} />
         </div>
         </FullscreenWrapper>
     );

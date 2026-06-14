@@ -4,6 +4,7 @@ import { router } from '@inertiajs/react';
 import { X, Heart, Trophy, RotateCcw, ArrowLeft, Volume2, Sparkles, SkipForward } from 'lucide-react';
 import axios from 'axios';
 import FullscreenWrapper from '@/Components/Organisms/FullscreenWrapper';
+import FeedbackModal from '@/Components/Organisms/FeedbackModal';
 
 interface Level { id: number; title: string; minimum_passing_score: number; }
 interface Student { id: number; name: string; }
@@ -293,19 +294,6 @@ export default function Tajwid({ level, student, nextLevel }: Props) {
 
                 {/* Options — Bottom/Right */}
                 <div className="w-full md:w-[50%] flex flex-col gap-3 md:gap-4 max-w-md md:max-w-xl mx-auto [@media(max-height:500px)]:gap-1.5 [@media(max-height:500px)]:overflow-y-auto [@media(max-height:500px)]:max-h-[85vh] [@media(max-height:500px)]:pr-2">
-                    {/* Feedback bar (inline, above options when answered) */}
-                    <AnimatePresence mode="wait">
-                        {feedback && (
-                            <motion.div key={feedback}
-                                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-                                className={`w-full py-3 px-4 rounded-2xl text-center font-black text-sm md:text-base border-4 shadow-md
-                                    ${feedback === 'correct' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-amber-50 border-amber-300 text-amber-700'}`}>
-                                {feedback === 'correct' ? '🎉 Wah, benar sekali!' : '💡 Yuk pelajari!'}
-                                <p className="text-xs md:text-sm font-bold text-slate-600 mt-1">{currentQ.explanation}</p>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
                     <div className="flex flex-col [@media(max-height:500px)]:grid [@media(max-height:500px)]:grid-cols-2 gap-2 md:gap-3">
                         {currentQ.options.map((opt: any, idx: number) => {
                             const theme = OPTION_THEMES[idx % OPTION_THEMES.length];
@@ -325,7 +313,13 @@ export default function Tajwid({ level, student, nextLevel }: Props) {
                                         ${isWrong ? 'bg-slate-100 border-slate-200 text-slate-400 opacity-60' : ''}
                                         ${feedback && !isCorrect && !isWrong ? `${theme.bg} ${theme.text} border-transparent opacity-40` : ''}
                                     `}>
-                                    <span className="leading-tight flex-1 text-sm md:text-lg [@media(max-height:500px)]:text-sm">{opt.text}</span>
+                                    <span className={`leading-normal flex-1 ${
+                                        /[\u0600-\u06FF]/.test(opt.text) 
+                                        ? 'font-arabic text-2xl md:text-3xl tracking-[0.2em] [@media(max-height:500px)]:text-xl' 
+                                        : 'text-sm md:text-lg [@media(max-height:500px)]:text-sm'
+                                    }`}>
+                                        {opt.text}
+                                    </span>
                                     {isCorrect && (
                                         <motion.div className="bg-white rounded-full p-1 shadow-sm ml-2" animate={{ rotate: [0, 15, -15, 0] }} transition={{ duration: 0.5, repeat: Infinity }}>
                                             <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-amber-400" />
@@ -346,6 +340,8 @@ export default function Tajwid({ level, student, nextLevel }: Props) {
                     )}
                 </div>
             </div>
+
+            <FeedbackModal feedback={feedback} explanation={currentQ.explanation} />
         </div>
         </FullscreenWrapper>
     );

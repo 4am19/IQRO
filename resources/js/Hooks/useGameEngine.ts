@@ -160,7 +160,7 @@ export function useGameEngine(
                 setCurrentIdx(prev => prev + 1);
                 setFeedback(null);
             }
-        }, 1200);
+        }, 2500);
     }, [feedback, currentIdx, totalQuestions]);
 
     const getDurationSeconds = useCallback(() => {
