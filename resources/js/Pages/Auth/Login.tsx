@@ -1,6 +1,6 @@
 import React, { FormEventHandler, useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { Mail, Lock, ArrowLeft, LogIn, Sparkles, Eye, EyeOff } from 'lucide-react';
 import FullscreenWrapper from '@/Components/Organisms/FullscreenWrapper';
 
@@ -58,7 +58,7 @@ export default function Login({ status, canResetPassword }: { status?: string; c
         post(route('login'), { onFinish: () => reset('password') });
     };
 
-    const containerVariants = {
+    const containerVariants: Variants = {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
@@ -66,7 +66,7 @@ export default function Login({ status, canResetPassword }: { status?: string; c
         }
     };
 
-    const itemVariants = {
+    const itemVariants: Variants = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
     };

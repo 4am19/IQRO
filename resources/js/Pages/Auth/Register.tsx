@@ -1,7 +1,7 @@
 import React, { FormEventHandler, useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { Mail, Lock, User, UserPlus, ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import FullscreenWrapper from '@/Components/Organisms/FullscreenWrapper';
 
 const AnimatedInput = ({ icon: Icon, type, value, onChange, placeholder, id }: any) => {
@@ -60,7 +60,7 @@ export default function Register() {
         post(route('register'), { onFinish: () => reset('password', 'password_confirmation') });
     };
 
-    const containerVariants = {
+    const containerVariants: Variants = {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
@@ -68,7 +68,7 @@ export default function Register() {
         }
     };
 
-    const itemVariants = {
+    const itemVariants: Variants = {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
     };
