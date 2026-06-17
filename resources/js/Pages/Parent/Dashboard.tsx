@@ -14,6 +14,7 @@ interface Stats {
     total_games_played: number; total_time_minutes: number; average_score: number;
     recent_games: GameRecord[]; progress: Progress[];
     weaknesses?: { item: string; count: number; }[];
+    chart_data?: { day: string; score: number; }[];
 }
 interface Props {
     students: Student[];
@@ -35,15 +36,21 @@ const BADGES = [
 ];
 
 /* ── Weekly Chart (gradient fill) ──────────────────────────────────────── */
-function WeeklyChart() {
-    const points = [
-        { x: 15, y: 85 }, { x: 55, y: 60 }, { x: 95, y: 70 },
-        { x: 135, y: 35 }, { x: 175, y: 45 }, { x: 215, y: 20 }, { x: 255, y: 10 },
-    ];
+function WeeklyChart({ data }: { data?: { day: string, score: number }[] }) {
+    if (!data || data.length === 0) return null;
+
+    const days = data.map(d => d.day);
+    const vals = data.map(d => d.score);
+    const maxVal = Math.max(...vals, 100); // minimum 100 to avoid flatline at 0
+
+    const points = vals.map((v, i) => {
+        const x = 15 + i * 40; // 15, 55, 95, 135, 175, 215, 255
+        const y = 100 - ((v / maxVal) * 90); // Map to 10-100 range
+        return { x, y };
+    });
+
     const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ');
     const areaD = pathD + ` L 255,100 L 15,100 Z`;
-    const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-    const vals = [250, 500, 400, 750, 680, 900, 1000];
 
     return (
         <div className="space-y-2">
@@ -142,6 +149,39 @@ function EditStudentModal({ student, onClose }: { student: Student; onClose: () 
     );
 }
 
+/* ── Delete Student Modal ──────────────────────────────────────────────── */
+function DeleteStudentModal({ student, onClose, onConfirm }: { student: Student; onClose: () => void; onConfirm: () => void }) {
+    return (
+        <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+                onClick={e => e.stopPropagation()}
+                className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4 text-center"
+            >
+                <div className="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <Trash2 className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-black text-slate-800">Hapus Profil?</h3>
+                <p className="text-sm font-bold text-slate-500">
+                    Apakah Anda yakin ingin menghapus profil <span className="text-slate-800 font-black">{student.name}</span>? Semua data dan riwayat belajarnya akan ikut terhapus.
+                </p>
+                <div className="flex gap-3 pt-2">
+                    <button onClick={onClose} className="flex-1 py-3 rounded-2xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition">
+                        Batal
+                    </button>
+                    <button onClick={onConfirm} className="flex-1 py-3 rounded-2xl font-bold text-white bg-rose-500 hover:bg-rose-600 shadow-md shadow-rose-500/30 transition">
+                        Ya, Hapus
+                    </button>
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+}
+
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 /*  MAIN DASHBOARD                                                             */
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -149,10 +189,10 @@ function EditStudentModal({ student, onClose }: { student: Student; onClose: () 
 export default function ParentDashboard({ students, selectedStudent, stats, auth }: Props) {
     const [showAddForm, setShowAddForm] = useState(false);
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+    const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
     const { data, setData, post, processing, reset } = useForm({ name: '', age: '' as any, avatar_url: 'boy' });
 
     const select = (s: Student) => router.visit(`/parent/dashboard?student_id=${s.id}`, { preserveState: false });
-    const del = (id: number) => { if (confirm('Hapus profil anak ini?')) router.delete(`/students/${id}`); };
     const add = (e: React.FormEvent) => { e.preventDefault(); post('/students', { onSuccess: () => { reset(); setShowAddForm(false); } }); };
 
     const fmtDur = (s: number) => s < 60 ? `${s}d` : `${Math.round(s / 60)}m`;
@@ -257,12 +297,15 @@ export default function ParentDashboard({ students, selectedStudent, stats, auth
                                                 placeholder="Usia" min={3} max={15}
                                                 className="w-full sm:w-24 rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-sm font-bold focus:outline-none focus:border-indigo-500" />
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex gap-2">
-                                                <button type="button" onClick={() => setData('avatar_url', 'boy')} className={`px-4 py-2 rounded-xl text-2xl border-2 transition ${data.avatar_url === 'boy' ? 'bg-blue-100 border-blue-300 scale-105' : 'bg-slate-50 border-slate-100 grayscale opacity-60'}`}>👦</button>
-                                                <button type="button" onClick={() => setData('avatar_url', 'girl')} className={`px-4 py-2 rounded-xl text-2xl border-2 transition ${data.avatar_url === 'girl' ? 'bg-pink-100 border-pink-300 scale-105' : 'bg-slate-50 border-slate-100 grayscale opacity-60'}`}>👧</button>
+                                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                            <div className="flex gap-2 w-full sm:w-auto justify-center sm:justify-start">
+                                                <button type="button" onClick={() => setData('avatar_url', 'boy')} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-2xl border-2 transition ${data.avatar_url === 'boy' ? 'bg-blue-100 border-blue-300 scale-105' : 'bg-slate-50 border-slate-100 grayscale opacity-60'}`}>👦</button>
+                                                <button type="button" onClick={() => setData('avatar_url', 'girl')} className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-2xl border-2 transition ${data.avatar_url === 'girl' ? 'bg-pink-100 border-pink-300 scale-105' : 'bg-slate-50 border-slate-100 grayscale opacity-60'}`}>👧</button>
                                             </div>
-                                            <button type="submit" disabled={processing} className="btn-indigo px-5 py-3 sm:py-2 text-sm disabled:opacity-60 ml-auto shrink-0">Simpan</button>
+                                            <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
+                                                <button type="button" onClick={() => { setShowAddForm(false); reset(); }} className="flex-1 sm:flex-none px-5 py-3 sm:py-2.5 rounded-xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition text-sm">Batal</button>
+                                                <button type="submit" disabled={processing} className="btn-indigo flex-1 sm:flex-none px-5 py-3 sm:py-2.5 text-sm disabled:opacity-60 shadow-sm transition">Simpan</button>
+                                            </div>
                                         </div>
                                     </motion.form>
                                 )}
@@ -281,7 +324,7 @@ export default function ParentDashboard({ students, selectedStudent, stats, auth
                                             }`}>
                                             <span className="text-xl">{s.avatar_url === 'boy' ? '👦' : '👧'}</span> {s.name}
                                         </button>
-                                        <button onClick={() => del(s.id)} className="p-2 text-slate-300 hover:bg-rose-50 rounded-xl hover:text-rose-500 transition-colors">
+                                        <button onClick={() => setStudentToDelete(s)} className="p-2 text-slate-300 hover:bg-rose-50 rounded-xl hover:text-rose-500 transition-colors">
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -493,7 +536,7 @@ export default function ParentDashboard({ students, selectedStudent, stats, auth
                                                 <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">7 Hari Terakhir</span>
                                             </div>
                                             <div className="pt-2">
-                                                <WeeklyChart />
+                                                <WeeklyChart data={stats.chart_data} />
                                             </div>
                                             {selectedStudent && (
                                                 <div className="flex items-center gap-3 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl shadow-inner mt-2">
@@ -607,6 +650,20 @@ export default function ParentDashboard({ students, selectedStudent, stats, auth
                     <EditStudentModal student={editingStudent} onClose={() => setEditingStudent(null)} />
                 )}
             </AnimatePresence>
+            <AnimatePresence>
+                {studentToDelete && (
+                    <DeleteStudentModal 
+                        student={studentToDelete} 
+                        onClose={() => setStudentToDelete(null)}
+                        onConfirm={() => {
+                            router.delete(`/students/${studentToDelete.id}`, { 
+                                onSuccess: () => setStudentToDelete(null) 
+                            });
+                        }}
+                    />
+                )}
+            </AnimatePresence>
+
         </AppLayout>
     );
 }

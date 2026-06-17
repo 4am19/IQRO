@@ -11,7 +11,7 @@ export default function Edit({
     status,
 }: PageProps<{ mustVerifyEmail: boolean; status?: string }>) {
     return (
-        <AppLayout title="Pengaturan Profil">
+        <AppLayout title="Pengaturan Profil" staticHeader>
             <div className="space-y-5">
                 {/* Header */}
                 <div className="flex items-center gap-3">

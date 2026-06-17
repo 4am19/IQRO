@@ -44,6 +44,23 @@ class ParentDashboardController extends Controller
                 ];
             }
 
+            // Chart Data for last 7 days
+            $last7Days = [];
+            $now = \Carbon\Carbon::now();
+            for ($i = 6; $i >= 0; $i--) {
+                $date = $now->copy()->subDays($i)->format('Y-m-d');
+                $dayName = $now->copy()->subDays($i)->isoFormat('ddd'); // Sen, Sel, etc
+                $last7Days[$date] = ['day' => $dayName, 'score' => 0];
+            }
+
+            foreach ($selectedStudent->gameHistories as $history) {
+                $date = \Carbon\Carbon::parse($history->played_at)->format('Y-m-d');
+                if (isset($last7Days[$date])) {
+                    $last7Days[$date]['score'] += $history->score_achieved;
+                }
+            }
+            $chartData = array_values($last7Days);
+
             $stats = [
                 'total_score' => $selectedStudent->total_score,
                 'levels_completed' => $selectedStudent->progress->where('is_completed', true)->count(),
@@ -58,6 +75,7 @@ class ParentDashboardController extends Controller
                     ->get(),
                 'progress' => $selectedStudent->progress()->with('level')->get(),
                 'weaknesses' => $topWeaknesses,
+                'chart_data' => $chartData,
             ];
         }
 

@@ -2,8 +2,8 @@ import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
 
 const navLinks = [
-    { href: '/',            label: 'Beranda', icon: '🏠', colorClass: 'btn-sunshine' },
-    { href: '/learn',       label: 'Belajar', icon: '📖', colorClass: 'btn-ocean' },
+    { href: '/', label: 'Beranda', icon: '🏠', colorClass: 'btn-sunshine' },
+    { href: '/learn', label: 'Belajar', icon: '📖', colorClass: 'btn-ocean' },
     { href: '/game/select', label: 'Bermain', icon: '🎮', colorClass: 'btn-candy' },
 ];
 
@@ -24,7 +24,7 @@ export default function AppHeader({ isStatic = false }: AppHeaderProps) {
                     <img
                         src="/images/logo_pintar_mengaji.png"
                         alt="Pintar Mengaji"
-                        className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 object-contain drop-shadow-xl transition-all"
+                        className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 lg:w-52 lg:h-52 object-contain drop-shadow-xl transition-all"
                     />
                 </Link>
 
@@ -34,11 +34,10 @@ export default function AppHeader({ isStatic = false }: AppHeaderProps) {
                         const active = isActive(href);
                         return (
                             <Link key={href} href={href}
-                                className={`relative group flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-full font-black text-sm transition-all duration-300 ${
-                                    active
+                                className={`relative group flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-full font-black text-sm transition-all duration-300 ${active
                                         ? `${colorClass} shadow-lg scale-105 ring-3 ring-white/50`
                                         : 'bg-slate-100/80 text-slate-500 border-2 border-slate-200/50 hover:bg-white hover:text-indigo-600 hover:scale-105 hover:shadow-md hover:-translate-y-0.5'
-                                }`}
+                                    }`}
                             >
                                 <span className="text-xl sm:text-2xl filter drop-shadow-sm">{icon}</span>
                                 <span className="hidden sm:inline text-xs sm:text-sm">{label}</span>

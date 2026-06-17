@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/react';
 import { Head } from '@inertiajs/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MascotHufi from '@/Components/MascotHufi';
+import FullscreenWrapper from '@/Components/Organisms/FullscreenWrapper';
 import MobileNav from '@/Components/Organisms/MobileNav';
 import { useBGM } from '@/Hooks/useBGM';
 import { Volume2, VolumeX, Volume1 } from 'lucide-react';
@@ -539,12 +540,13 @@ export default function Home({ auth }: Props) {
     ], []);
 
     return (
-        <div
-            ref={heroRef}
-            className="home-hero"
-            onClick={handleTapSparkle}
-        >
-            <Head title="Pintar Hijaiyah — Belajar Hijaiyah Jadi Seru!" />
+        <FullscreenWrapper isActive={isStarted}>
+            <div
+                ref={heroRef}
+                className="home-hero"
+                onClick={handleTapSparkle}
+            >
+                <Head title="Pintar Hijaiyah — Belajar Hijaiyah Jadi Seru!" />
 
             {/* ━━━ SPLASH SCREEN OVERLAY ━━━ */}
             <AnimatePresence>
@@ -840,5 +842,6 @@ export default function Home({ auth }: Props) {
             {/* ━━━ MOBILE NAV ━━━ */}
             <MobileNav />
         </div>
+        </FullscreenWrapper>
     );
 }

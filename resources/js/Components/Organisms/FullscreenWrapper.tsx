@@ -3,14 +3,21 @@ import { Play } from 'lucide-react';
 
 interface Props {
     children: React.ReactNode;
+    isActive?: boolean;
 }
 
-export default function FullscreenWrapper({ children }: Props) {
+export default function FullscreenWrapper({ children, isActive = true }: Props) {
     const [showResumePrompt, setShowResumePrompt] = useState(false);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
         
+        // Reset and stop if not active
+        if (!isActive) {
+            setShowResumePrompt(false);
+            return;
+        }
+
         // Cek jika device adalah mobile/tablet
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 1024;
         if (!isMobile) return;
@@ -54,7 +61,7 @@ export default function FullscreenWrapper({ children }: Props) {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('resize', handleResize);
         };
-    }, []);
+    }, [isActive]);
 
     const resumeFullscreen = async () => {
         try {

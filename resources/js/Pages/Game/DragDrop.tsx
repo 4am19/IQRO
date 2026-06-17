@@ -22,6 +22,21 @@ const WORD_LIST = [
     { word: 'بَاب',  meaning: 'Pintu',  letters: ['ب', 'ا', 'ب'] },
     { word: 'نَار',  meaning: 'Api',    letters: ['ن', 'ا', 'ر'] },
     { word: 'سَمَاء', meaning: 'Langit', letters: ['س', 'م', 'ا', 'ء'] },
+    { word: 'قَلَم', meaning: 'Pena',    letters: ['ق', 'ل', 'م'] },
+    { word: 'مَاء',  meaning: 'Air',     letters: ['م', 'ا', 'ء'] },
+    { word: 'شَمْس', meaning: 'Matahari',letters: ['ش', 'م', 'س'] },
+    { word: 'قَمَر', meaning: 'Bulan',   letters: ['ق', 'م', 'ر'] },
+    { word: 'نَجْم', meaning: 'Bintang', letters: ['ن', 'ج', 'م'] },
+    { word: 'مَسْجِد', meaning: 'Masjid', letters: ['م', 'س', 'ج', 'د'] },
+    { word: 'شَجَرَة', meaning: 'Pohon',  letters: ['ش', 'ج', 'ر', 'ة'] },
+    { word: 'جَمَل', meaning: 'Unta',    letters: ['ج', 'م', 'ل'] },
+    { word: 'فِيْل', meaning: 'Gajah',   letters: ['ف', 'ي', 'ل'] },
+    { word: 'سَمَك', meaning: 'Ikan',    letters: ['س', 'م', 'ك'] },
+    { word: 'مَوْز', meaning: 'Pisang',  letters: ['م', 'و', 'ز'] },
+    { word: 'خُبْز', meaning: 'Roti',    letters: ['خ', 'ب', 'ز'] },
+    { word: 'عَيْن', meaning: 'Mata',    letters: ['ع', 'ي', 'ن'] },
+    { word: 'يَد',   meaning: 'Tangan',  letters: ['ي', 'د'] },
+    { word: 'أَنْف', meaning: 'Hidung',  letters: ['أ', 'ن', 'ف'] },
 ];
 
 // Confetti particle component
@@ -40,38 +55,37 @@ function ConfettiParticles() {
     );
 }
 
-function DraggableLetter({ id, char, isPlaced, borderClass }: { id: string; char: string; isPlaced: boolean; borderClass?: string }) {
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
+function DraggableLetter({ id, char, isPlaced, borderClass, onClick }: { id: string; char: string; isPlaced: boolean; borderClass?: string; onClick?: () => void }) {
+    const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id });
     if (isPlaced) return <div className="w-14 h-14 md:w-20 md:h-20 opacity-0 rounded-2xl [@media(max-height:500px)]:w-14 [@media(max-height:500px)]:h-14" />;
     return (
-        <div ref={setNodeRef} {...listeners} {...attributes}
-            className={`w-14 h-14 md:w-20 md:h-20 flex items-center justify-center bg-white border-4 ${borderClass || 'border-indigo-200'} rounded-2xl md:rounded-3xl font-arabic text-3xl md:text-5xl cursor-grab active:cursor-grabbing transition-all touch-none shadow-md hover:shadow-xl hover:-translate-y-1 hover:scale-105 ${isDragging ? 'opacity-30' : ''} [@media(max-height:500px)]:w-14 [@media(max-height:500px)]:h-14 [@media(max-height:500px)]:text-3xl`}>
+        <div ref={setNodeRef} {...listeners} {...attributes} onClick={onClick}
+            className={`w-14 h-14 md:w-20 md:h-20 flex items-center justify-center bg-white border-4 ${borderClass || 'border-indigo-200'} rounded-2xl md:rounded-3xl font-arabic text-3xl md:text-5xl cursor-grab active:cursor-grabbing transition-all touch-none shadow-md hover:shadow-xl hover:-translate-y-1 hover:scale-105 ${isDragging ? 'opacity-0' : ''} ${onClick ? 'hover:bg-rose-50 hover:border-rose-400 hover:text-rose-600' : ''} [@media(max-height:500px)]:w-14 [@media(max-height:500px)]:h-14 [@media(max-height:500px)]:text-3xl`}>
             {char}
         </div>
     );
 }
 
-function DroppableSlot({ id, char, onRemove }: { id: string; char?: string; onRemove?: () => void }) {
+function DroppableSlot({ id, isOccupied, children }: { id: string; isOccupied: boolean; children?: React.ReactNode }) {
     const { isOver, setNodeRef } = useDroppable({ id });
     return (
-        <div ref={setNodeRef} onClick={char && onRemove ? onRemove : undefined}
+        <div ref={setNodeRef}
             className={`w-14 h-14 md:w-20 md:h-20 flex items-center justify-center rounded-2xl md:rounded-3xl border-[3px] md:border-4 transition-all [@media(max-height:500px)]:w-14 [@media(max-height:500px)]:h-14 ${
-                char ? 'bg-indigo-50 border-indigo-400 text-3xl md:text-5xl font-arabic shadow-sm text-indigo-900 [@media(max-height:500px)]:text-3xl cursor-pointer hover:bg-rose-50 hover:border-rose-400 hover:text-rose-600'
+                isOccupied ? 'border-transparent'
                 : isOver ? 'bg-indigo-50 border-indigo-300 border-dashed scale-105'
                 : 'bg-white border-dashed border-slate-300 shadow-inner'
             }`}>
-            {char || <span className="text-slate-300 text-sm md:text-base font-black">?</span>}
+            {children || <span className="text-slate-300 text-sm md:text-base font-black">?</span>}
         </div>
     );
 }
 
 export default function DragDrop({ letters, level, student, nextLevel }: DragDropProps) {
     const { playAudio } = useAudioPlayer();
-    const [wordQueue] = useState(() => [...WORD_LIST].sort(() => Math.random() - 0.5));
+    const [wordQueue] = useState(() => [...WORD_LIST].sort(() => Math.random() - 0.5).slice(0, 10));
     const [currentWordIdx, setCurrentWordIdx] = useState(0);
     const [slots, setSlots] = useState<(string | null)[]>([]);
     const [shuffledLetters, setShuffledLetters] = useState<{ id: string; char: string }[]>([]);
-    const [placedMap, setPlacedMap] = useState<Record<string, string | null>>({});
     const [score, setScore] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
     const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
@@ -91,7 +105,6 @@ export default function DragDrop({ letters, level, student, nextLevel }: DragDro
         if (!currentWord) return;
         setSlots(new Array(currentWord.letters.length).fill(null));
         setShuffledLetters([...currentWord.letters].sort(() => Math.random() - 0.5).map((char, i) => ({ id: `letter-${i}-${char}`, char })));
-        setPlacedMap({});
         setFeedback(null);
     }, [currentWordIdx]);
 
@@ -99,44 +112,46 @@ export default function DragDrop({ letters, level, student, nextLevel }: DragDro
         const { active, over } = event;
         setActiveId(null);
         if (!over) return;
-        const droppedChar = shuffledLetters.find(l => l.id === active.id)?.char;
-        const slotIdx = parseInt(over.id as string);
-        if (!droppedChar || isNaN(slotIdx)) return;
         
-        const oldLetterId = Object.keys(placedMap).find(key => placedMap[key] === over.id);
+        const activeIdRaw = active.id as string;
+        const activeIdStr = activeIdRaw.startsWith('in-slot-') ? activeIdRaw.replace('in-slot-', '') : activeIdRaw;
+        const targetSlotIdx = parseInt(over.id as string);
+        if (isNaN(targetSlotIdx)) return;
 
-        setSlots(prev => { const next = [...prev]; next[slotIdx] = droppedChar; return next; });
-        setPlacedMap(prev => { 
-            const next = { ...prev }; 
-            if (oldLetterId) delete next[oldLetterId];
-            next[active.id as string] = over.id as string; 
-            return next; 
+        setSlots(prev => {
+            const next = [...prev];
+            const sourceSlotIdx = next.findIndex(id => id === activeIdStr);
+            const existingLetterId = next[targetSlotIdx];
+            
+            if (sourceSlotIdx !== -1) {
+                // Swap if dragged from another slot
+                next[sourceSlotIdx] = existingLetterId;
+                next[targetSlotIdx] = activeIdStr;
+            } else {
+                // Dragged from tray
+                next[targetSlotIdx] = activeIdStr;
+            }
+            return next;
         });
     };
 
     const handleRemoveSlot = (slotIdx: number) => {
-        if (slots[slotIdx] === null) return;
-        const letterId = Object.keys(placedMap).find(key => placedMap[key] === String(slotIdx));
         setSlots(prev => {
             const next = [...prev];
             next[slotIdx] = null;
             return next;
         });
-        if (letterId) {
-            setPlacedMap(prev => {
-                const next = { ...prev };
-                delete next[letterId];
-                return next;
-            });
-        }
     };
 
     const checkAnswer = () => {
-        const isCorrect = slots.every((char, idx) => char === currentWord.letters[idx]);
+        const isCorrect = slots.every((id, idx) => {
+            if (!id) return false;
+            const char = shuffledLetters.find(l => l.id === id)?.char;
+            return char === currentWord.letters[idx];
+        });
         setFeedback(isCorrect ? 'correct' : 'wrong');
         if (isCorrect) {
             setScore(prev => Math.min(100, prev + Math.round(100 / wordQueue.length)));
-            playAudio(currentWord.word);
             setShowConfetti(true);
             setTimeout(() => setShowConfetti(false), 2000);
         } else {
@@ -257,10 +272,6 @@ export default function DragDrop({ letters, level, student, nextLevel }: DragDro
                         <div className="text-6xl md:text-8xl font-arabic font-black text-indigo-900 mb-3 md:mb-5 drop-shadow-sm leading-tight [@media(max-height:500px)]:text-4xl [@media(max-height:500px)]:mb-2">{currentWord?.word}</div>
                         <div className="flex items-center justify-center gap-3 bg-indigo-50 px-4 md:px-6 py-2 md:py-3 rounded-full border border-indigo-100 shadow-sm w-full mt-2 [@media(max-height:500px)]:py-1.5">
                             <p className="text-indigo-700 font-black text-sm md:text-base flex-1 text-center [@media(max-height:500px)]:text-xs">"{currentWord?.meaning}"</p>
-                            <button onClick={() => playAudio(currentWord?.word ?? '')}
-                                className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-2 md:p-2.5 rounded-full hover:from-indigo-600 hover:to-purple-600 transition-colors active:scale-90 shadow-md">
-                                <Volume2 className="w-4 h-4 md:w-5 md:h-5" />
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -270,19 +281,33 @@ export default function DragDrop({ letters, level, student, nextLevel }: DragDro
                     <DndContext sensors={sensors} onDragStart={({ active }) => setActiveId(active.id as string)} onDragEnd={handleDragEnd}>
                         {/* Drop Slots */}
                         <div className="bg-white/80 backdrop-blur-md border-4 border-dashed border-indigo-200 rounded-[28px] p-4 sm:p-6 md:p-8 flex flex-row-reverse justify-center gap-3 md:gap-5 shadow-inner min-h-[100px] md:min-h-[140px] items-center [@media(max-height:500px)]:p-3 [@media(max-height:500px)]:min-h-[80px] [@media(max-height:500px)]:rounded-xl">
-                            {slots.map((char, idx) => (
-                                <DroppableSlot key={idx} id={String(idx)} char={char ?? undefined} onRemove={() => handleRemoveSlot(idx)} />
-                            ))}
+                            {slots.map((letterId, idx) => {
+                                const letter = letterId ? shuffledLetters.find(l => l.id === letterId) : null;
+                                const borderClass = letter ? BORDER_COLORS[shuffledLetters.findIndex(l => l.id === letter.id) % BORDER_COLORS.length] : '';
+                                return (
+                                    <DroppableSlot key={idx} id={String(idx)} isOccupied={!!letter}>
+                                        {letter && (
+                                            <DraggableLetter 
+                                                id={`in-slot-${letter.id}`} 
+                                                char={letter.char} 
+                                                isPlaced={false} 
+                                                borderClass={borderClass}
+                                                onClick={() => handleRemoveSlot(idx)}
+                                            />
+                                        )}
+                                    </DroppableSlot>
+                                );
+                            })}
                         </div>
 
-                        {/* Draggable Letters */}
+                        {/* Draggable Letters (Tray) */}
                         <div className="bg-white/95 backdrop-blur-md border-4 border-white rounded-[28px] p-5 sm:p-6 md:p-8 shadow-2xl relative [@media(max-height:500px)]:p-4 [@media(max-height:500px)]:rounded-xl">
                             <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-indigo-50 text-indigo-700 px-5 py-1.5 rounded-full text-xs md:text-sm font-black border-2 border-indigo-200 whitespace-nowrap shadow-sm [@media(max-height:500px)]:py-1 [@media(max-height:500px)]:text-[10px]">
                                 Seret huruf ke kotak di atas 👆
                             </div>
                             <div className="flex flex-wrap justify-center gap-3 md:gap-5 pt-3">
                                 {shuffledLetters.map((letter, idx) => {
-                                    const isPlaced = !!placedMap[letter.id];
+                                    const isPlaced = slots.includes(letter.id);
                                     const borderClass = BORDER_COLORS[idx % BORDER_COLORS.length];
                                     return (
                                         <div key={letter.id} className="relative">
@@ -295,8 +320,9 @@ export default function DragDrop({ letters, level, student, nextLevel }: DragDro
 
                         <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
                             {activeId ? (() => {
-                                const letter = shuffledLetters.find(l => l.id === activeId);
-                                const idx = shuffledLetters.findIndex(l => l.id === activeId);
+                                const realId = activeId.startsWith('in-slot-') ? activeId.replace('in-slot-', '') : activeId;
+                                const letter = shuffledLetters.find(l => l.id === realId);
+                                const idx = shuffledLetters.findIndex(l => l.id === realId);
                                 const borderClass = BORDER_COLORS[idx % BORDER_COLORS.length] || BORDER_COLORS[0];
                                 return (
                                     <div className={`w-14 h-14 md:w-20 md:h-20 flex items-center justify-center bg-white border-4 ${borderClass} rounded-2xl md:rounded-3xl font-arabic text-3xl md:text-5xl shadow-2xl scale-110 [@media(max-height:500px)]:w-14 [@media(max-height:500px)]:h-14 [@media(max-height:500px)]:text-3xl`}>

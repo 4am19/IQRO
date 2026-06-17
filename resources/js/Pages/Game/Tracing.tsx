@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { router } from '@inertiajs/react';
 import { useAudioPlayer } from '@/Hooks/useAudioPlayer';
-import { Trophy, RotateCcw, ArrowLeft, Eraser, CheckCircle2, Volume2, X, SkipForward } from 'lucide-react';
+import { Trophy, RotateCcw, ArrowLeft, Eraser, Pencil, CheckCircle2, Volume2, X, SkipForward } from 'lucide-react';
 import axios from 'axios';
 import FullscreenWrapper from '@/Components/Organisms/FullscreenWrapper';
 
@@ -11,8 +11,11 @@ interface Level { id: number; title: string; minimum_passing_score: number; }
 interface Student { id: number; name: string; }
 interface TracingProps { letters: Letter[]; level: Level; student?: Student | null; nextLevel?: Level | null; }
 
-const TOTAL_LETTERS = 5;
+const TOTAL_LETTERS = 10;
 const MIN_COVERAGE = 0.05;   // Very relaxed: just 5% coverage means they traced inside the line
+
+const PEN_CURSOR = "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"40\" style=\"font-size:30px\"><text y=\"30\">✏️</text></svg>') 0 40, auto";
+const ERASER_CURSOR = "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"40\" style=\"font-size:30px\"><text y=\"30\">🧽</text></svg>') 20 20, auto";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ENCOURAGEMENT MESSAGES
@@ -37,6 +40,7 @@ const SUCCESS_MESSAGES = [
    ═══════════════════════════════════════════════════════════════════════════ */
 export default function Tracing({ letters, level, student, nextLevel }: TracingProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const bgCanvasRef = useRef<HTMLCanvasElement>(null);
     const guideCanvasRef = useRef<HTMLCanvasElement>(null); // Hidden canvas for guide pixel detection
     const isDrawingRef = useRef(false);
     const { playAudio } = useAudioPlayer();
@@ -57,6 +61,7 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
     const [feedbackType, setFeedbackType] = useState<'error' | 'success' | ''>('');
     const [shakeButton, setShakeButton] = useState(false);
     const [hasDrawn, setHasDrawn] = useState(false);
+    const [activeTool, setActiveTool] = useState<'pen' | 'eraser'>('pen');
 
     // Initialize letter queue
     useEffect(() => {
@@ -76,19 +81,24 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
     const renderGuide = useCallback(() => {
         if (!currentLetter) return;
         const canvas = canvasRef.current;
+        const bgCanvas = bgCanvasRef.current;
         const guideCanvas = guideCanvasRef.current;
-        if (!canvas || !guideCanvas) return;
+        if (!canvas || !bgCanvas || !guideCanvas) return;
 
         const ctx = canvas.getContext('2d');
+        const bgCtx = bgCanvas.getContext('2d');
         const guideCtx = guideCanvas.getContext('2d');
-        if (!ctx || !guideCtx) return;
+        if (!ctx || !bgCtx || !guideCtx) return;
 
         // Set hidden guide canvas to same size
         guideCanvas.width = canvas.width;
         guideCanvas.height = canvas.height;
+        bgCanvas.width = canvas.width;
+        bgCanvas.height = canvas.height;
 
-        // Clear both
+        // Clear all
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
         guideCtx.clearRect(0, 0, guideCanvas.width, guideCanvas.height);
 
         const size = Math.min(canvas.width, canvas.height) * 0.7;
@@ -148,19 +158,19 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
         }
         setValidPixels(newValidPixels);
 
-        // Draw on visible canvas (ghost + dashed outline)
-        ctx.font = `${size}px Amiri, serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.globalAlpha = 0.08;
-        ctx.fillStyle = '#10b981';
-        ctx.fillText(currentLetter.char_arabic, canvas.width / 2, canvas.height / 2);
-        ctx.globalAlpha = 1;
-        ctx.setLineDash([6, 10]);
-        ctx.strokeStyle = '#6ee7b7';
-        ctx.lineWidth = 4;
-        ctx.strokeText(currentLetter.char_arabic, canvas.width / 2, canvas.height / 2);
-        ctx.setLineDash([]);
+        // Draw on visual background canvas (ghost + dashed outline)
+        bgCtx.font = `${size}px Amiri, serif`;
+        bgCtx.textAlign = 'center';
+        bgCtx.textBaseline = 'middle';
+        bgCtx.globalAlpha = 0.08;
+        bgCtx.fillStyle = '#10b981';
+        bgCtx.fillText(currentLetter.char_arabic, bgCanvas.width / 2, bgCanvas.height / 2);
+        bgCtx.globalAlpha = 1;
+        bgCtx.setLineDash([6, 10]);
+        bgCtx.strokeStyle = '#6ee7b7';
+        bgCtx.lineWidth = 4;
+        bgCtx.strokeText(currentLetter.char_arabic, bgCanvas.width / 2, bgCanvas.height / 2);
+        bgCtx.setLineDash([]);
     }, [currentLetter]);
 
     // Handle resize to match canvas internal resolution with CSS display size
@@ -174,6 +184,10 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
                 if (canvas.width !== Math.round(rect.width) || canvas.height !== Math.round(rect.height)) {
                     canvas.width = rect.width;
                     canvas.height = rect.height;
+                    if (bgCanvasRef.current) {
+                        bgCanvasRef.current.width = rect.width;
+                        bgCanvasRef.current.height = rect.height;
+                    }
                     if (guideCanvasRef.current) {
                         guideCanvasRef.current.width = rect.width;
                         guideCanvasRef.current.height = rect.height;
@@ -195,6 +209,7 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
         setFeedbackMsg('');
         setFeedbackType('');
         setHasDrawn(false);
+        setActiveTool('pen');
         // Small delay to ensure canvas is ready before render
         setTimeout(() => requestAnimationFrame(() => renderGuide()), 50);
     }, [currentLetter, renderGuide]);
@@ -245,10 +260,21 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
         const key = `${Math.round(pos.x / gridSize)},${Math.round(pos.y / gridSize)}`;
         const isOnGuide = validPixels.has(key);
 
-        ctx.lineWidth = 32; 
-        ctx.lineCap = 'round';
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.strokeStyle = isOnGuide ? '#34d399' : 'rgba(239, 68, 68, 0.4)'; 
+        const cw = canvasRef.current?.width || 800;
+        const dynamicPenSize = Math.max(8, Math.min(32, cw * 0.035));
+        
+        if (activeTool === 'eraser') {
+            ctx.lineWidth = dynamicPenSize * 2; // Eraser is twice as thick
+            ctx.lineCap = 'round';
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.strokeStyle = 'rgba(0,0,0,1)';
+        } else {
+            ctx.lineWidth = dynamicPenSize; 
+            ctx.lineCap = 'round';
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = isOnGuide ? '#34d399' : 'rgba(239, 68, 68, 0.4)'; 
+        }
+        
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
         ctx.beginPath();
@@ -256,14 +282,6 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
     };
 
     const stopDraw = () => { isDrawingRef.current = false; };
-
-    // ── Clear Canvas ──
-    const clearCanvas = () => {
-        setFeedbackMsg('');
-        setFeedbackType('');
-        setHasDrawn(false);
-        renderGuide();
-    };
 
     // ── Calculate coverage and accuracy using actual pixel data ──
     const getStats = useCallback(() => {
@@ -493,10 +511,26 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
                         </div>
 
                         <div className="flex gap-2 w-full mt-1">
-                            <button onClick={clearCanvas}
-                                className="flex-1 flex items-center justify-center gap-1 md:gap-2 bg-white border-2 md:border-4 border-slate-200 text-slate-600 px-2 sm:px-4 py-2 sm:py-3 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] sm:text-sm md:text-lg transition-all active:scale-95 shadow-md hover:bg-slate-50 [@media(max-height:500px)]:py-2 [@media(max-height:500px)]:text-[10px] [@media(max-height:500px)]:border-2 [@media(max-height:500px)]:rounded-xl">
-                                <Eraser className="w-3 h-3 md:w-5 md:h-5" /> Hapus
-                            </button>
+                            <div className="flex-1 flex gap-1 bg-white border-2 md:border-4 border-slate-200 p-1 md:p-1.5 rounded-xl md:rounded-2xl shadow-sm [@media(max-height:500px)]:border-2 [@media(max-height:500px)]:rounded-xl">
+                                <button onClick={() => setActiveTool('pen')}
+                                    className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 rounded-lg md:rounded-xl transition-all active:scale-95 font-black text-[9px] md:text-sm ${
+                                        activeTool === 'pen'
+                                            ? 'bg-indigo-100 text-indigo-700 shadow-inner border-2 border-indigo-200'
+                                            : 'text-slate-400 hover:bg-slate-50 border-2 border-transparent'
+                                    }`}>
+                                    <Pencil className="w-4 h-4 md:w-5 md:h-5 shrink-0" />
+                                    <span className="hidden lg:inline">Bolpoin</span>
+                                </button>
+                                <button onClick={() => setActiveTool('eraser')}
+                                    className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 rounded-lg md:rounded-xl transition-all active:scale-95 font-black text-[9px] md:text-sm ${
+                                        activeTool === 'eraser'
+                                            ? 'bg-rose-100 text-rose-600 shadow-inner border-2 border-rose-200'
+                                            : 'text-slate-400 hover:bg-rose-50 border-2 border-transparent'
+                                    }`}>
+                                    <Eraser className="w-4 h-4 md:w-5 md:h-5 shrink-0" />
+                                    <span className="hidden lg:inline">Hapus</span>
+                                </button>
+                            </div>
                             <motion.button
                                 onClick={handleNext}
                                 animate={shakeButton ? { x: [-8, 8, -6, 6, -3, 3, 0] } : {}}
@@ -508,7 +542,7 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
                                 }`}
                             >
                                 <CheckCircle2 className="w-3 h-3 md:w-5 md:h-5 shrink-0" />
-                                <span className="truncate">{currentIdx + 1 >= TOTAL_LETTERS ? 'Selesai! 🎉' : 'Lanjut →'}</span>
+                                <span className="whitespace-nowrap">{currentIdx + 1 >= TOTAL_LETTERS ? 'Selesai! 🎉' : 'Lanjut →'}</span>
                             </motion.button>
                         </div>
 
@@ -544,8 +578,11 @@ export default function Tracing({ letters, level, student, nextLevel }: TracingP
 
                     <div className="relative w-full h-full rounded-[20px] md:rounded-[28px] overflow-hidden border-[4px] md:border-[6px] border-dashed border-indigo-200 bg-white shadow-xl flex flex-col justify-center items-center">
 
+                        <canvas ref={bgCanvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+
                         <canvas ref={canvasRef}
-                            className="absolute inset-0 w-full h-full touch-none cursor-crosshair"
+                            className="absolute inset-0 w-full h-full touch-none"
+                            style={{ cursor: activeTool === 'eraser' ? ERASER_CURSOR : PEN_CURSOR }}
                             onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
                             onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw}
                         />

@@ -167,7 +167,7 @@ const TAJWID_DATA: TajwidCategory[] = [
                 id: 'izhar-syafawi', title: 'Izhar Syafawi', titleAr: 'إظهار شفوي', emoji: '🔊',
                 color: 'text-orange-700', colorLight: 'bg-orange-50', borderColor: 'border-orange-200', iconBg: 'bg-orange-500',
                 description: 'Dibaca JELAS di bibir tanpa dengung saat Mim Mati bertemu huruf selain Ba dan Mim.',
-                letters: '26 huruf lainnya', lettersLabel: 'Semua huruf selain ب dan م',
+                letters: 'ء ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل ن و ه ي', lettersLabel: 'Semua huruf selain ب dan م (26 Huruf)',
                 example: { arabic: 'أَمْ لَمْ', latin: 'Am lam', meaning: 'Ataukah tidak' },
                 tip: 'Bukan Ba, bukan Mim = baca Mim-nya JELAS! 📢',
             },
@@ -203,6 +203,7 @@ const TAJWID_DATA: TajwidCategory[] = [
 
 function TajwidRuleCard({ rule, index }: { rule: TajwidRule; index: number }) {
     const [isOpen, setIsOpen] = useState(false);
+    const { playAudio } = useAudioPlayer();
 
     return (
         <motion.div
@@ -212,18 +213,18 @@ function TajwidRuleCard({ rule, index }: { rule: TajwidRule; index: number }) {
         >
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-full text-left rounded-2xl border-2 ${rule.borderColor} ${rule.colorLight} p-3 sm:p-3.5 transition-all duration-300 active:scale-[0.98] ${isOpen ? 'shadow-lg' : 'shadow-sm hover:shadow-md'}`}
+                className={`w-full text-left rounded-2xl border-2 ${rule.borderColor} ${rule.colorLight} p-4 sm:p-5 transition-all duration-300 active:scale-[0.98] ${isOpen ? 'shadow-lg' : 'shadow-sm hover:shadow-md'}`}
             >
-                <div className="flex items-center gap-2.5">
-                    <div className={`w-9 h-9 sm:w-10 sm:h-10 ${rule.iconBg} rounded-xl flex items-center justify-center text-base sm:text-lg shadow-md shrink-0 border-2 border-white/30`}>
+                <div className="flex items-center gap-3 sm:gap-4">
+                    <div className={`w-11 h-11 sm:w-12 sm:h-12 ${rule.iconBg} rounded-xl flex items-center justify-center text-lg sm:text-xl shadow-md shrink-0 border-2 border-white/30`}>
                         {rule.emoji}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h4 className={`font-black text-xs sm:text-sm ${rule.color} leading-tight`}>{rule.title}</h4>
-                        {rule.titleAr && <span className={`text-[10px] sm:text-xs font-bold ${rule.color} opacity-50`} dir="rtl">{rule.titleAr}</span>}
+                        <h4 className={`font-black text-sm sm:text-base ${rule.color} leading-tight`}>{rule.title}</h4>
+                        {rule.titleAr && <span className={`text-xs sm:text-sm font-bold ${rule.color} opacity-50`} dir="rtl">{rule.titleAr}</span>}
                     </div>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-all shrink-0 ${isOpen ? rule.iconBg + ' text-white' : 'bg-white/80 ' + rule.color}`}>
-                        {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all shrink-0 ${isOpen ? rule.iconBg + ' text-white' : 'bg-white/80 ' + rule.color}`}>
+                        {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </div>
                 </div>
             </button>
@@ -237,16 +238,21 @@ function TajwidRuleCard({ rule, index }: { rule: TajwidRule; index: number }) {
                         transition={{ duration: 0.25 }}
                         className="overflow-hidden"
                     >
-                        <div className={`${rule.colorLight} border-2 ${rule.borderColor} border-t-0 rounded-b-2xl px-3 sm:px-3.5 pb-3.5 pt-2.5 -mt-2 space-y-2.5`}>
-                            <p className="text-[11px] sm:text-xs text-slate-700 font-semibold leading-relaxed">{rule.description}</p>
+                        <div className={`${rule.colorLight} border-2 ${rule.borderColor} border-t-0 rounded-b-2xl px-5 sm:px-6 pb-5 sm:pb-6 pt-4 sm:pt-5 -mt-2 space-y-3`}>
+                            <p className="text-xs sm:text-sm text-slate-700 font-semibold leading-relaxed py-0.5">{rule.description}</p>
 
                             {rule.letters && (
-                                <div className="bg-white/80 rounded-xl p-2.5 border border-white shadow-sm">
-                                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">{rule.lettersLabel}</p>
-                                    <div className="flex flex-wrap gap-1.5" dir="rtl">
+                                <div className="bg-white/80 rounded-xl p-3.5 sm:p-4 border border-white shadow-sm">
+                                    <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">{rule.lettersLabel}</p>
+                                    <div className="flex flex-wrap gap-2 sm:gap-2.5" dir="rtl">
                                         {rule.letters.split(' ').map((l, i) => (
                                             <motion.span key={i} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: i * 0.04, type: 'spring', damping: 14 }}
-                                                className={`inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg ${rule.iconBg} text-white font-bold text-sm sm:text-base shadow-md border-2 border-white/30`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const cleanL = l.trim();
+                                                    playAudio(cleanL, cleanL, 'polos');
+                                                }}
+                                                className={`cursor-pointer inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-lg ${rule.iconBg} text-white font-bold text-base sm:text-lg shadow-md border-2 border-white/30`}
                                             >{l}</motion.span>
                                         ))}
                                     </div>
@@ -254,18 +260,18 @@ function TajwidRuleCard({ rule, index }: { rule: TajwidRule; index: number }) {
                             )}
 
                             {rule.example && (
-                                <div className="bg-white/80 rounded-xl p-2.5 border border-white shadow-sm text-center space-y-0.5">
-                                    <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-wider">✏️ Contoh</p>
-                                    <p className="font-sans font-black text-xl sm:text-2xl text-indigo-900 leading-tight" dir="rtl">{rule.example.arabic}</p>
-                                    <p className={`text-[11px] sm:text-xs font-bold ${rule.color}`}>"{rule.example.latin}"</p>
-                                    {rule.example.meaning && <p className="text-[9px] sm:text-[10px] text-slate-400 font-semibold italic">{rule.example.meaning}</p>}
+                                <div className="bg-white/80 rounded-xl p-3.5 sm:p-4 border border-white shadow-sm text-center space-y-1">
+                                    <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">✏️ Contoh</p>
+                                    <p className="font-sans font-black text-2xl sm:text-3xl text-indigo-900 leading-tight" dir="rtl">{rule.example.arabic}</p>
+                                    <p className={`text-xs sm:text-sm font-bold ${rule.color}`}>"{rule.example.latin}"</p>
+                                    {rule.example.meaning && <p className="text-[10px] sm:text-xs text-slate-400 font-semibold italic">{rule.example.meaning}</p>}
                                 </div>
                             )}
 
                             {rule.tip && (
-                                <div className="flex items-start gap-1.5 bg-amber-50 border-2 border-amber-200 rounded-xl px-2.5 py-2">
-                                    <span className="text-sm shrink-0">💡</span>
-                                    <p className="text-[11px] sm:text-xs font-bold text-amber-800 leading-snug">{rule.tip}</p>
+                                <div className="flex items-start gap-2 bg-amber-50 border-2 border-amber-200 rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3">
+                                    <span className="text-base sm:text-lg shrink-0">💡</span>
+                                    <p className="text-xs sm:text-sm font-bold text-amber-800 leading-snug">{rule.tip}</p>
                                 </div>
                             )}
                         </div>
@@ -288,21 +294,21 @@ function TajwidCategoryAccordion({ category, catIndex }: { category: TajwidCateg
             transition={{ delay: catIndex * 0.12, type: 'spring', damping: 22 }}
         >
             <button onClick={() => setIsExpanded(!isExpanded)} className="w-full">
-                <div className={`bg-gradient-to-r ${category.gradient} rounded-2xl p-3.5 sm:p-4 shadow-lg border-2 border-white/20 transition-all duration-300 ${isExpanded ? 'rounded-b-none' : 'hover:shadow-xl hover:-translate-y-0.5'}`}>
-                    <div className="flex items-center gap-2.5 sm:gap-3">
-                        <div className="w-10 h-10 sm:w-11 sm:h-11 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-xl sm:text-2xl shadow-inner border-2 border-white/30 shrink-0">
+                <div className={`bg-gradient-to-r ${category.gradient} rounded-2xl p-4 sm:p-5 shadow-lg border-2 border-white/20 transition-all duration-300 ${isExpanded ? 'rounded-b-none' : 'hover:shadow-xl hover:-translate-y-0.5'}`}>
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="w-12 h-12 sm:w-13 sm:h-13 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-xl sm:text-2xl shadow-inner border-2 border-white/30 shrink-0">
                             {category.emoji}
                         </div>
                         <div className="flex-1 text-left min-w-0">
-                            <h3 className="font-black text-white text-sm sm:text-base leading-tight drop-shadow-sm">{category.title}</h3>
-                            <p className="text-[10px] sm:text-xs text-white/60 font-bold mt-0.5" dir="rtl">{category.subtitle}</p>
+                            <h3 className="font-black text-white text-base sm:text-lg leading-tight drop-shadow-sm">{category.title}</h3>
+                            <p className="text-xs sm:text-sm text-white/60 font-bold mt-0.5" dir="rtl">{category.subtitle}</p>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="bg-white/20 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black text-white border border-white/20">
+                        <div className="flex items-center gap-2 shrink-0">
+                            <span className="bg-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-black text-white border border-white/20">
                                 {category.rules.length} hukum
                             </span>
-                            <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-white transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
-                                <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-white transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
+                                <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
                             </div>
                         </div>
                     </div>
@@ -318,7 +324,7 @@ function TajwidCategoryAccordion({ category, catIndex }: { category: TajwidCateg
                         transition={{ duration: 0.3 }}
                         className="overflow-hidden"
                     >
-                        <div className={`bg-gradient-to-b ${category.gradientLight} border-2 ${category.borderColor} border-t-0 rounded-b-2xl p-3 space-y-2.5`}>
+                        <div className={`bg-gradient-to-b ${category.gradientLight} border-2 ${category.borderColor} border-t-0 rounded-b-2xl p-3.5 sm:p-4 space-y-3`}>
                             {category.rules.map((rule, idx) => (
                                 <TajwidRuleCard key={rule.id} rule={rule} index={idx} />
                             ))}
@@ -339,34 +345,34 @@ function TajwidSection() {
             <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 border-2 border-white/20 shadow-xl relative overflow-hidden"
+                className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-[20px] sm:rounded-[24px] p-5 sm:p-6 border-2 border-white/20 shadow-xl relative overflow-hidden"
             >
                 <div className="absolute -top-10 -right-10 w-28 h-28 bg-white/10 rounded-full blur-2xl" />
                 <div className="absolute -bottom-8 -left-8 w-20 h-20 bg-white/10 rounded-full blur-xl" />
 
-                <div className="flex items-center gap-3 relative z-10">
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-inner border-2 border-white/30 shrink-0">
+                <div className="flex items-center gap-3.5 sm:gap-4 relative z-10">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-xl sm:text-2xl shadow-inner border-2 border-white/30 shrink-0">
                         📖
                     </div>
                     <div className="flex-1">
-                        <h2 className="font-black text-white text-base sm:text-lg leading-tight drop-shadow-sm flex items-center gap-2">
+                        <h2 className="font-black text-white text-lg sm:text-xl leading-tight drop-shadow-sm flex items-center gap-2">
                             Belajar Tajwid Dasar
-                            <Sparkles className="w-4 h-4 text-amber-300" />
+                            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-300" />
                         </h2>
-                        <p className="text-[10px] sm:text-xs text-white/60 font-bold mt-0.5">
+                        <p className="text-xs sm:text-sm text-white/60 font-bold mt-0.5">
                             Ayo pelajari cara membaca Al-Qur'an yang benar! 🌟
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 mt-2.5 relative z-10">
-                    <div className="bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center gap-1 border border-white/20">
-                        <Star className="w-3 h-3 text-amber-300 fill-amber-300" />
-                        <span className="text-[9px] sm:text-[10px] font-bold text-white">3 Kategori</span>
+                <div className="flex items-center gap-2.5 mt-3 relative z-10">
+                    <div className="bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-white/20">
+                        <Star className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                        <span className="text-[10px] sm:text-xs font-bold text-white">3 Kategori</span>
                     </div>
-                    <div className="bg-white/15 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center gap-1 border border-white/20">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-300" />
-                        <span className="text-[9px] sm:text-[10px] font-bold text-white">10 Hukum</span>
+                    <div className="bg-white/15 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-white/20">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                        <span className="text-[10px] sm:text-xs font-bold text-white">10 Hukum</span>
                     </div>
                 </div>
             </motion.div>
@@ -376,16 +382,16 @@ function TajwidSection() {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white/90 backdrop-blur-md rounded-2xl border-2 border-purple-100 p-3.5 sm:p-4 shadow-lg relative overflow-hidden"
+                className="bg-white/90 backdrop-blur-md rounded-2xl border-2 border-purple-100 p-4 sm:p-5 shadow-lg relative overflow-hidden"
             >
                 <div className="absolute top-0 right-0 w-16 h-16 bg-purple-100/50 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl" />
-                <div className="flex items-start gap-2.5 relative z-10">
-                    <div className="w-9 h-9 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-xl flex items-center justify-center text-base shadow-md shrink-0 border-2 border-white">
+                <div className="flex items-start gap-3 sm:gap-3.5 relative z-10">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-xl flex items-center justify-center text-lg sm:text-xl shadow-md shrink-0 border-2 border-white">
                         🤔
                     </div>
                     <div>
-                        <h3 className="font-black text-xs sm:text-sm text-indigo-900 mb-1">Apa itu Tajwid?</h3>
-                        <p className="text-[11px] sm:text-xs text-slate-600 font-semibold leading-relaxed">
+                        <h3 className="font-black text-sm sm:text-base text-indigo-900 mb-1.5">Apa itu Tajwid?</h3>
+                        <p className="text-xs sm:text-sm text-slate-600 font-semibold leading-relaxed">
                             <strong className="text-purple-700">Tajwid</strong> adalah ilmu cara membaca Al-Qur'an dengan <strong className="text-emerald-600">benar dan indah</strong>.
                             Dengan tajwid, kita tahu kapan harus membaca jelas, mendengung, samar, atau memantulkan huruf. Yuk kenali hukum-hukum tajwid dasar! 🎓
                         </p>
